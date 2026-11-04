@@ -1,62 +1,56 @@
-# Validation et travail restant
+# Validation 0.1.2 — issue #1
 
-## Tests automatisés implémentés
+## Résultats locaux
 
-- Mot idle connu `0x7A89C197` pour vérifier l'encodeur BCH.
-- Tous les masques de corruption d'un bit et de deux bits d'un mot : 528 cas.
-- Trames à 512, 1200, 2400 bauds en polarité normale et inversée.
-- Les quatre fonctions, adresse maximale, message traversant deux batches, sync corrigée,
-  rejet après perte de synchronisation, resynchronisation et mot à trois erreurs rejeté.
-- Extraction RIC et fonction, texte ALPHA et appel TONE.
-- Génération IQ CU8 FSK à ±4500 Hz : préambule, sync, adresse et message numérique
-  connus ; démodulation en mode AUTO aux trois débits et deux polarités.
-- Journaux : reprise d'une destination indisponible et absence de doublon après remise
-  en attente de lignes déjà écrites.
+Compilation Windows Release x64 : GCC 13.1 / Qt 6.8.3. Trois suites CTest passent : moteur, intégration Qt/SQLite/journaux, références IQ indépendantes. GitHub Actions vérifie également la version avant publication.
 
-Ces tests sont synthétiques. Ils ne prouvent pas une réception physique ni une
-résistance suffisante aux signaux faibles ou perturbés.
+## Tests synthétiques internes
 
-## Non validé / non terminé
+BCH : mot idle connu, 528 masques d'un/deux bits, trois erreurs rejetées. Trois débits, deux polarités, quatre fonctions, RIC maximal, messages multibatches, sync corrigée, perte/reprise de sync. Les messages partiels à la fin de capture sont abandonnés.
 
-- RTL-SDR générique : ouverture, réglages et acquisition IQ vérifiés sur le matériel présent.
-  V3/V4 identifiés et HackRF : pas d'essai spécifique effectué.
-- Aucun fichier IQ provenant d'une capture radio indépendante n'est fourni.
-- Aucun comparatif multimon-ng réalisé.
-- HackRF, plusieurs récepteurs et plusieurs canaux simultanés non implémentés.
-- Reconnexion automatique USB, démarrage Windows et politique de rétention non implémentés.
-- Sauvegarde/restauration, purge et contrôles d'intégrité via interface à ajouter.
-- Filtres fréquence/débit à compléter. Tri interactif et couleurs des capcodes/alias implémentés.
-- Journal TXT : file de reprise SQLite transactionnelle et réessai toutes les dix secondes.
-  Chaque ligne porte un identifiant unique ; la reprise cherche la ligne dans la fin du fichier
-  avant de réécrire. Un verrou par fichier sérialise les écritures de cette application.
-  La résistance aux coupures électriques, les modifications externes et les systèmes de
-  fichiers réseau restent à qualifier. Pas de journal quotidien.
-- Gestion des capcodes et profils enregistrée par bouton Enregistrer, pas à chaque frappe.
-- Type de message déduit de la fonction (0 numérique, autres alpha), convention non universelle.
-- Synchronisation initiale exacte ; tolérance de deux erreurs sur sync aux frontières de batch.
-- Filtrage DSP et récupération d'horloge initiaux, à qualifier sur captures et bruit.
-- FFT réelle CU8, échelle relative dBFS ; pas de SNR ni de qualité fictifs.
-- Spectre : zoom, sélection de fréquence, déplacement et bande passante visuelle à ajouter.
-- Les tableaux sont adossés à SQLite mais leur rafraîchissement complet par message
-  doit être optimisé avant qualification 24 h/24. Le DSP s'exécute dans le fil de réception.
-- La fermeture peut attendre la fin d'une lecture USB synchrone.
-- Les tests d'intégration SQLite, panneaux, filtrage, UTF-8, ajout sans effacement,
-  routage multiple, déduplication des chemins, changement de fichier et restauration passent.
-  Une qualification visuelle et prolongée de l'interface reste nécessaire.
+ALPHA avec fonction 0 est interprété correctement en mode ALPHA : plus de convention universelle par fonction. AUTO signale les ambiguïtés. Tests IQ FSK internes pour les trois débits et polarités, numérique explicite.
 
-## Exécution locale du 4 novembre 2026
+## Références synthétiques indépendantes : 6/6
 
-Compilation Release x64 avec GCC 13.1 / Qt 6.8.3 : réussie.
-CTest : 2 suites sur 2 réussies (moteur et intégration), environ 0,46 seconde.
-Les tests Qt nécessitent l'accès normal aux fichiers temporaires ; le bac à sable local
-empêche l'ouverture SQLite de certains chemins temporaires.
+`tests/fixtures` contient six IQ produits par **gen-ng de multimon-ng**, pas par notre encodeur : trois débits × ALPHA/NUMERIC, avec les symboles numériques `. U - ] [`. Résultats vérifiés par le décodeur externe avant fixation du manifeste. CTest les démodule et vérifie capcode, fonction, débit, type et texte.
 
-Test matériel du 4 novembre : RTL2832U OEM, 169626000 Hz, 240000 éch/s,
-45 secondes sans erreur USB, 67 messages produits par le moteur. Le contenu n'a pas été
-comparé à PDW : l'exactitude de ces messages et le taux de pertes ne sont pas validés.
-Le rapport technique ne contient aucun texte radio reçu.
-GitHub Actions Windows x64 a également compilé, testé et généré l'artefact avec succès.
+Outil : multimon-ng commit `b5f7d71c5e9b5a76093ba55c515968dc40f92804`. Pour sa compilation MinGW, C est activé en plus de CXX dans son CMake Windows, sans modification des algorithmes. Cet outil ne fait pas partie du logiciel livré. Reproduction : `scripts/make_reference_fixtures.py`.
 
-La version 0.1.1 est une base intégrée à tester. Elle ne doit pas être présentée comme
-un successeur PDW finalisé ou une réception matérielle validée.
+## Enregistrements externes : 3/3
 
+Fichiers `test/samples/POCSAG_sample_-_{512,1200,2400}_bps.flac` du dépôt multimon-ng. Un message attendu par fichier : tous les champs et textes concordent, sans sortie supplémentaire. Ce sont des enregistrements **audio externes**, remodulés en CU8 à ±4500 Hz pour tester notre entrée IQ, et non des captures IQ radio originales. SHA256 et compteurs dans `reference-validation-30s.json`.
+
+## Captures IQ réelles privées : même transmission comparée
+
+RTL2832U OEM, 169626000 Hz, 240000 éch/s, gain supporté le plus proche de 42 dB. Captures CU8 de 30 et 60 secondes sans erreur USB signalée. Notre moteur relit les CU8 exacts. Pour multimon-ng, un discriminateur FM et un rééchantillonneur scipy indépendants produisent du PCM 22050 Hz depuis ces mêmes CU8. Les deux outils sont explicitement en ALPHA : le type n'est pas prétendu déduit du protocole.
+
+| Capture | Candidats de référence | Textes acceptés ici | Concordance exacte | Autres résultats |
+|---|---:|---:|---:|---|
+| 30 s | 1 | 1 | 1/1 affiché | aucun supplémentaire |
+| 60 s | 11 | 10 | 10/10 affichés | 1 contenu non textuel diagnostique |
+
+Le douzième candidat sur l'ensemble contient GS/ETB/ESC/BS. La charge utile correspond aussi à la référence après conversion symétrique de la représentation des contrôles ; elle n'est pas déclarée texte exploitable. **11 textes acceptés sur 12 candidats : 100 % des textes acceptés concordent, 91,7 % des candidats sont affichables par défaut.** La nature du contenu à contrôles n'est pas identifiée ; aucune conclusion de chiffrement.
+
+Normalisation : la référence rend les contrôles en balises. Les terminateurs NUL/ETX/EOT et espaces de remplissage de fin sont exclus symétriquement. Ce taux ne compare pas les décorations d'affichage. Rapports : `reference-validation-30s.json`, `reference-validation-60s.json`. Reproduction : `scripts/compare_reference.py`.
+
+Les rapports ne contiennent que compteurs et empreintes. Captures, adresses et textes réels restent hors Git. Aucune comparaison PDW réalisée. Cet échantillon limité ne permet pas d'annoncer un taux général de réception ou une fidélité universelle.
+
+## Tests d'intégration et ergonomie
+
+- TONE désactivé avant SQLite, les deux panneaux et TXT ; activation volontaire, masquage des anciens TONE, persistance du filtre, annulation des écritures en attente de types désactivés. Le compteur texte exclut TONE et diagnostics.
+- Journaux UTF-8 en ajout, général + spécifique, déduplication des destinations, reprise d'erreur, absence de réécriture après remise en attente, changement de fichier.
+- 23:59:59 puis 00:00:01 à Bruxelles : chemins datés corrects. Racine bloquée pendant les réceptions puis débloquée : les reprises conservent leurs destinations d'origine.
+- Création automatique des dossiers ; deux capcodes avec deux dossiers/fichiers quotidiens distincts. Fuseau Europe/Brussels vérifié en hiver et en été.
+- Migration depuis le schéma capcodes/profils 0.1.1 : alias, chemins, profils conservés et colonnes initialisées. Relecture de l'historique et contrôle d'intégrité SQLite.
+- Tous les pas prévus testés par boutons et clavier ; molette testée. Le pas personnalisé passe par le même mécanisme et est persisté.
+- Ligne rouge vérifiée au rendu jusqu'au bas du waterfall ; zoom centré réel. Historique de 305 messages et affichage des nouveaux en tête.
+
+## Limites restantes
+
+- Les V3/V4 spécifiques, les niveaux de bruit/décalages/brouillages et conventions de codage ne sont pas systématiquement qualifiés. ASCII 7 bits supporté, pas tous les jeux nationaux. Aucun déchiffrement promis.
+- Sync initial exact, sync de batch tolérant deux bits. Filtre FIR, décimation, discriminateur et horloge qualifiés seulement sur les jeux décrits. Un défaut non corrigible produit un rejet.
+- Un message interrompu à l'arrêt ou en fin de capture est abandonné. Plafond de sécurité : 65520 bits utiles ; dépassement rejeté.
+- AUTO est conservateur et peut demander un choix manuel. Le changement d'accord redémarre brièvement le SDR ; aucune continuité garantie pendant ce réaccord.
+- Conservation SQLite manuelle avec confirmation ; aucune suppression des TXT. Pas de qualification 24 h/24, coupures électriques, disque plein, stockage réseau ou modifications externes concurrentes prolongées. La reprise cherche la ligne dans la fin du fichier.
+- Pas de HackRF, multicanal, reconnexion USB automatique ou démarrage Windows automatique. Rafraîchissement des grands historiques à optimiser.
+- Sauvegarde/restauration par interface, sélection à la souris et déplacement dans le spectre restent hors de cette version. Aucun SNR artificiel.

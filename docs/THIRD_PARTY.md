@@ -17,5 +17,6 @@ Utiliser la distribution officielle RTL-SDR Blog pour V3/V4 : https://github.com
 Les DLL et leurs dépendances doivent correspondre à l'architecture x64.
 Respecter les licences GPL des bibliothèques RTL-SDR si elles sont redistribuées.
 Le code original de cette application est fourni sous GPL version 3 ou ultérieure ; voir LICENSE.
-HackRF : non intégré dans la version 0.1.1.
+HackRF : non intégré dans la version 0.1.2.
+
 

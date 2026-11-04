@@ -43,10 +43,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: POCSAG-SDR-Pro-windows-x64
       - uses: softprops/action-gh-release@v2
         with:
           prerelease: true
+          body_path: docs/RELEASE-0.1.2.md
           files: POCSAG-SDR-Pro-windows-x64.zip
