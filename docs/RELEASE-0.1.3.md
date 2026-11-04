@@ -12,4 +12,6 @@
 
 Validation : cinq suites CTest réussies ; réception RTL réelle 60 secondes à 169,626000 MHz, quatre messages texte décodés sans erreur USB ; test vocal natif réussi avec Microsoft Hortense Desktop. Les références indépendantes du décodeur sont conservées.
 
+GitHub Actions est bloqué avant démarrage par le budget du compte (run 41934951697). ZIP construit et testé localement sous Windows x64, sans succès CI revendiqué.
+
 Limites : pas de qualification H24/7 jours, pas de test physique HackRF/V3/V4 ni de débranchement USB manuel. La reconnexion a été testée par injection de panne dans une DLL de test absente du paquet livré. Les changements de paramètres redémarrent la réception et peuvent perdre des messages durant l'accord. Canal unique. Voir VALIDATION.md pour les preuves et limites.

@@ -4,6 +4,10 @@
 
 Windows x64 Release, GCC 13.1, Qt 6.8.3 : cinq suites CTest réussies (moteur, intégration Qt/SQLite/TXT, références indépendantes, file vocale, reconnexion injectée). Le pilote de test reste hors du paquet livré. Les résultats matériels ci-dessous ne sont pas déduits des doubles de test.
 
+Dernier passage des cinq suites : 13,55 secondes, zéro échec. GitHub Actions [run 41934951697](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/41934951697) est bloqué avant démarrage : « The job was not started because an Actions budget is preventing further use. » Aucun succès CI 0.1.3 revendiqué ; le ZIP est compilé et testé localement.
+
+Paquet portable : ZIP extrait dans un dossier distinct ; lancement graphique réussi et nouvelle réception réelle de 15 secondes avec PATH limité à Windows, sans Qt/MinGW de développement. Code de sortie 0, 3 messages texte et aucune erreur USB. Le paquet ne contient ni DLL de test, ni base utilisateur, ni capture IQ privée. Ce contrôle est effectué sur le PC Windows de développement, pas sur une seconde machine vierge.
+
 | Exigence | Preuve 0.1.3 | Limite |
 |---|---|---|
 | Deux tableaux et deux onglets | Tests Qt : tous les textes en haut, sélection active en bas, colonnes et onglets | Contrôle visuel séparé |

@@ -18,3 +18,4 @@ Copy-Item docs/RELEASE-0.1.3.md,docs/reference-validation-30s.json,docs/referenc
 Copy-Item licenses $Destination -Recurse -Force
 # The temporary download cache is left for the OS to clean up; no recursive deletion.
 Copy-Item docs/speech-validation-0.1.3.json,docs/radio-validation-0.1.3.json $Destination
+Copy-Item docs/portable-validation-0.1.3.json $Destination
