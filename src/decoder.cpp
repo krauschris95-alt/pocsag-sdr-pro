@@ -30,7 +30,7 @@ void Decoder::bit(bool b){
   return;
  }
  if(++count_<32)return;count_=0;auto v=inverted_?~shift_:shift_;
- if(slot_==16){if(std::popcount(v^Sync)<=2){slot_=0;return;}finish();locked_=false;return;}
+ if(slot_==16){if(std::popcount(v^Sync)<=2){slot_=0;return;}active_=false;payload_.clear();locked_=false;return;}
  word(v);++slot_;
 }
 void Decoder::word(uint32_t v){

@@ -27,8 +27,7 @@ jobs:
         run: |
           cmake --install build --config Release --prefix dist/POCSAG-SDR-Pro
           windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
-          Copy-Item README.md,docs/VALIDATION.md,docs/THIRD_PARTY.md dist/POCSAG-SDR-Pro/
-          Copy-Item licenses dist/POCSAG-SDR-Pro/ -Recurse
+          ./scripts/package.ps1
           Compress-Archive dist/POCSAG-SDR-Pro/* dist/POCSAG-SDR-Pro-windows-x64.zip
       - uses: actions/upload-artifact@v4
         with:

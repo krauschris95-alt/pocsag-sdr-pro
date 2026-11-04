@@ -29,4 +29,5 @@ private:
  int selectedBaud_=0;bool autoscroll_=true;
  void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={});void start(QString file={});
  void capcodes();void journal();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
+ void flushJournal();
 };

@@ -2,7 +2,7 @@
 #include <QThread>
 #include <QStringList>
 #include <atomic>
-struct RadioConfig { quint32 frequency=146950000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; };
+struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; };
 class Receiver:public QThread {
  Q_OBJECT
 public:

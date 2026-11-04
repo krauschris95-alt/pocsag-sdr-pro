@@ -23,9 +23,11 @@ struct IntegrationChecks {
    w.sql("UPDATE capcodes SET active=0");w.refresh();require(w.saved_->rowCount()==0&&w.all_->rowCount()==4);
    w.sql("INSERT INTO capcodes(ric,alias) VALUES(122121,'New')");w.refresh();require(w.saved_->rowCount()==2);
    w.search_->setText("Deuxième");require(w.all_->rowCount()==1);w.search_->clear();
+   w.sql("UPDATE journal_outbox SET done=0");auto before=read(dir.path()+"/specific.txt");w.flushJournal();require(read(dir.path()+"/specific.txt")==before);
+   w.logPath_->setText(dir.path()+"/missing/retry.txt");w.received({122121,0,512,"NUMERIC","88",0});QSqlQuery retry("SELECT count(*) FROM journal_outbox WHERE done=0",w.db_);require(retry.next()&&retry.value(0).toInt()==1);retry.finish();QDir().mkpath(dir.path()+"/missing");w.flushJournal();require(read(dir.path()+"/missing/retry.txt").count("\r\n")==1);
    QSqlQuery q("PRAGMA integrity_check",w.db_);require(q.next()&&q.value(0).toString()=="ok");
   }
-  { Window restored(dir.path());require(restored.all_->rowCount()==4&&restored.saved_->rowCount()==2); }
+  { Window restored(dir.path());require(restored.all_->rowCount()==5&&restored.saved_->rowCount()==3); }
  }
 };
 int main(int argc,char** argv){QApplication app(argc,argv);app.setOrganizationName("POCSAG-SDR-Pro-Tests");app.setApplicationName("Integration");QSettings::setPath(QSettings::NativeFormat,QSettings::UserScope,QDir::tempPath());try{IntegrationChecks::run();std::cout<<"PASS: SQLite persistence, capcode panels/filter, UTF-8 append, multiple logs, path deduplication, live log change, restore, integrity\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

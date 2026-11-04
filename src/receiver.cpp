@@ -31,7 +31,12 @@ void Receiver::run(){
   auto ppm=symbol<int(*)(void*,int)>(l,"rtlsdr_set_freq_correction");auto mode=symbol<int(*)(void*,int)>(l,"rtlsdr_set_tuner_gain_mode");auto gain=symbol<int(*)(void*,int)>(l,"rtlsdr_set_tuner_gain");
   auto reset=symbol<int(*)(void*)>(l,"rtlsdr_reset_buffer");auto read=symbol<int(*)(void*,void*,int,int*)>(l,"rtlsdr_read_sync");
   if(open(&dev,config.index)<0)throw std::runtime_error("Impossible d'ouvrir le RTL-SDR (pilote ou appareil occupé)");
-  if(rate(dev,config.rate)<0||freq(dev,config.frequency)<0||ppm(dev,config.ppm)<0||mode(dev,1)<0||gain(dev,config.gain)<0||reset(dev)<0)throw std::runtime_error("Réglage RTL-SDR refusé par le pilote");
+  auto check=[](int result,const char* name){if(result<0)throw std::runtime_error(std::string(name)+" refusé (code "+std::to_string(result)+")");};
+  check(rate(dev,config.rate),"Taux IQ");check(freq(dev,config.frequency),"Fréquence");
+  int ppmResult=ppm(dev,config.ppm);if(ppmResult!=-2)check(ppmResult,"Correction PPM");
+  check(mode(dev,1),"Gain manuel");
+  auto gains=symbol<int(*)(void*,int*)>(l,"rtlsdr_get_tuner_gains");int nGains=gains(dev,nullptr);if(nGains<=0)throw std::runtime_error("Liste des gains indisponible");std::vector<int> supported(size_t(nGains),0);gains(dev,supported.data());int nearest=*std::min_element(supported.begin(),supported.end(),[&](int a,int b){return abs(a-config.gain)<abs(b-config.gain);});
+  check(gain(dev,nearest),"Gain tuner");check(reset(dev),"Réinitialisation du tampon");
   emit state("Réception RTL-SDR en cours");
   while(!stopping){QByteArray b(16384,0);int n=0;if(read(dev,b.data(),b.size(),&n)<0||n<=0)throw std::runtime_error("Erreur de lecture USB — réception interrompue");b.resize(n);consume(b);}
  }catch(const std::exception& e){emit problem(QString::fromUtf8(e.what()));}

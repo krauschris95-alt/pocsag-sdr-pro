@@ -9,6 +9,7 @@ void require(bool b){if(!b)throw std::runtime_error("test failed");}
 void feed(Decoder& d,uint32_t w,bool inv=false){for(int i=31;i>=0;--i)d.bit(bool((w>>i)&1)^inv);}
 int main(){
  require(encode(Idle>>11)==Idle);
+ {auto bad=encode(0x123456)^7;require(correct(bad)==-1);}
  for(int i=0;i<32;++i)for(int j=i;j<32;++j){auto w=encode(0x123456)^(1u<<i);if(j!=i)w^=1u<<j;require(correct(w)==(j==i?1:2));require(w==encode(0x123456));}
  for(int baud:{512,1200,2400})for(bool inv:{false,true}){
   std::vector<Message> out;Decoder d(baud,[&](Message m){out.push_back(m);});
@@ -18,6 +19,13 @@ int main(){
   feed(d,Idle,inv);require(out.size()==1&&out[0].text=="BONJOUR"&&out[0].ric==760832&&out[0].baud==baud&&out[0].function==3);
   feed(d,encode((122120u>>3)<<2),inv);feed(d,Idle,inv);require(out.back().type=="TONE");
  }
+ for(int function=0;function<4;++function){std::vector<Message> out;Decoder d(1200,[&](Message m){out.push_back(m);});feed(d,Sync);for(int i=0;i<14;++i)feed(d,Idle);feed(d,encode((2097151u>>3)<<2|function));feed(d,Idle);require(out.size()==1&&out[0].ric==2097151&&out[0].function==function);}
+ {
+  std::vector<Message> out;Decoder d(1200,[&](Message m){out.push_back(m);});feed(d,Sync);for(int i=0;i<14;++i)feed(d,Idle);feed(d,encode((2097151u>>3)<<2|3));
+  std::vector<bool> bits;for(char c:std::string("FRAGMENTATION"))for(int j=0;j<7;++j)bits.push_back((c>>j)&1);
+  for(int k=0;k<6;++k){if(k==1)feed(d,Sync^3);uint32_t info=1u<<20;for(int j=0;j<20;++j)if(k*20+j<int(bits.size())&&bits[k*20+j])info|=1u<<(19-j);feed(d,encode(info));}feed(d,Idle);require(out.size()==1&&out[0].text=="FRAGMENTATION"&&out[0].ric==2097151);
+ }
+ {std::vector<Message> out;Decoder d(1200,[&](Message m){out.push_back(m);});feed(d,Sync);feed(d,encode(3));for(int i=1;i<16;++i)feed(d,encode(1u<<20));feed(d,0);d.finish();require(out.empty());feed(d,Sync);feed(d,encode(3));feed(d,Idle);require(out.size()==1);}
  for(int baud:{512,1200,2400})for(bool inv:{false,true}){
   std::vector<bool> bits;for(int i=0;i<576;++i)bits.push_back(i%2);
   auto word=[&](uint32_t w){for(int i=31;i>=0;--i)bits.push_back(bool((w>>i)&1)^inv);};

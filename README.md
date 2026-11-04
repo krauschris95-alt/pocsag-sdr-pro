@@ -11,8 +11,8 @@ Les données sont locales dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`.
 Aucune télémétrie et aucun envoi des messages n'est implémenté.
 
 Pour RTL-SDR, installer WinUSB pour le récepteur avec Zadig, après avoir sélectionné le bon
-périphérique USB, puis placer la bibliothèque officielle RTL-SDR Blog x64 `rtlsdr.dll`
-et ses dépendances à côté de l'exécutable. Le V4 requiert la version du pilote de RTL-SDR Blog.
+périphérique USB. La bibliothèque officielle RTL-SDR Blog V1.4.0 x64 `rtlsdr.dll`
+et sa dépendance sont incluses dans le paquet, avec les sources correspondantes.
 Cliquer **Actualiser SDR**, choisir l'appareil, régler fréquence/gain/PPM et démarrer.
 La réception utilise actuellement 240 kS/s et un canal centré. Les réglages sont appliqués
 au démarrage de la réception. Une erreur USB arrête la chaîne et est signalée.
@@ -38,6 +38,9 @@ Le dossier de destination doit déjà exister.
 **Journal** gère les profils : nom, chemin, liste de capcodes séparés par virgules,
 Actif (`1` ou `0`). Liste vide = tous les capcodes. Plusieurs profils peuvent être actifs.
 Le fichier général peut être changé pendant la réception.
+Une file d'écriture persistante SQLite permet de reprendre les journaux après une erreur.
+Les lignes incluent un identifiant unique utilisé pour éviter une réécriture après interruption.
+Les destinations indisponibles sont réessayées toutes les dix secondes.
 
 Les tableaux disposent de recherche, copie de lignes sélectionnées, export CSV et
 ouverture du message complet par double-clic. Le panneau inférieur peut être masqué
@@ -58,3 +61,11 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 Le moteur seul peut être compilé avec `-DBUILD_GUI=OFF`.
 Le workflow Windows génère un ZIP ; un tag `v*` déclenche une préversion GitHub Release.
 Voir les [licences des dépendances](docs/THIRD_PARTY.md).
+
+## État matériel vérifié
+
+Le 4 novembre 2026, un RTL2832U OEM a acquis un signal à 169,626 MHz pendant 45 secondes,
+sans erreur USB ; le moteur a produit 67 messages. Leur contenu n'a pas été comparé à PDW.
+Cela ne qualifie pas encore les performances de décodage ou le fonctionnement 24 h/24.
+
+Licence du code original : GPL-3.0-or-later, voir LICENSE.

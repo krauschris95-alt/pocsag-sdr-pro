@@ -9,6 +9,20 @@
 #include <cmath>
 #include <numbers>
 #include <set>
+class MessageModel:public QSqlQueryModel {
+public:
+ QHash<QString,QColor> colors;
+ QVariant data(const QModelIndex& idx,int role=Qt::DisplayRole)const override{
+  if(role==Qt::ForegroundRole&&(idx.column()==4||idx.column()==7)){
+   auto color=colors.value(QSqlQueryModel::data(index(idx.row(),4)).toString());if(color.isValid())return color;
+  }return QSqlQueryModel::data(idx,role);
+ }
+ void apply(QString query,const QSqlDatabase& db){base_=query;db_=db;reload();}
+ void sort(int column,Qt::SortOrder order)override{column_=column;order_=order;if(!base_.isEmpty())reload();}
+private:
+ QString base_;QSqlDatabase db_;int column_=-1;Qt::SortOrder order_=Qt::AscendingOrder;
+ void reload(){auto query=base_;if(column_>=0){query=query.left(query.lastIndexOf("ORDER BY"))+"ORDER BY "+QString::number(column_+1)+(order_==Qt::AscendingOrder?" ASC":" DESC");}setQuery(query,db_);}
+};
 void Spectrum::updateIq(const QByteArray& b){
  constexpr int N=1024;if(b.size()<N*2)return;std::vector<std::complex<float>> a(N);
  for(int i=0;i<N;++i)a[i]=std::complex<float>((uchar(b[2*i])-127.5f)/128,(uchar(b[2*i+1])-127.5f)/128)*float(.5-.5*cos(2*std::numbers::pi*i/(N-1)));
@@ -24,7 +38,7 @@ void Spectrum::paintEvent(QPaintEvent*){
  QPainterPath line;for(int i=0;i<levels_.size();++i){double x=double(i)*width()/levels_.size(),y=std::clamp((-levels_[i]-20)/100.f,0.f,1.f)*h;if(!i)line.moveTo(x,y);else line.lineTo(x,y);}p.setPen(QColor("#42dcff"));p.drawPath(line);p.drawImage(QRect(0,h,width(),height()-h),waterfall_);
 }
 void Window::sql(const QString& text){QSqlQuery q(db_);if(!q.exec(text))throw std::runtime_error(q.lastError().text().toStdString());}
-static QTableView* table(QSqlQueryModel* model){auto t=new QTableView;t->setModel(model);t->setSelectionBehavior(QAbstractItemView::SelectRows);t->setSelectionMode(QAbstractItemView::ExtendedSelection);t->setAlternatingRowColors(true);t->verticalHeader()->hide();t->verticalHeader()->setDefaultSectionSize(25);t->horizontalHeader()->setStretchLastSection(true);return t;}
+static QTableView* table(QSqlQueryModel* model){auto t=new QTableView;t->setModel(model);t->setSelectionBehavior(QAbstractItemView::SelectRows);t->setSelectionMode(QAbstractItemView::ExtendedSelection);t->setAlternatingRowColors(true);t->verticalHeader()->hide();t->verticalHeader()->setDefaultSectionSize(25);t->horizontalHeader()->setStretchLastSection(true);t->horizontalHeader()->setSortIndicator(-1,Qt::AscendingOrder);t->setSortingEnabled(true);return t;}
 Window::Window(QString storageDirectory){
  setWindowTitle("POCSAG SDR Pro — 0.1.0 (validation en cours)");resize(1440,940);
  auto dir=storageDirectory.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):storageDirectory;QDir().mkpath(dir);
@@ -34,7 +48,9 @@ Window::Window(QString storageDirectory){
  sql("CREATE INDEX IF NOT EXISTS messages_ric ON messages(ric)");
  sql("CREATE TABLE IF NOT EXISTS capcodes(ric INTEGER PRIMARY KEY CHECK(ric BETWEEN 0 AND 2097151),alias TEXT,color TEXT DEFAULT '#47d7ff',active INTEGER DEFAULT 1,show_bottom INTEGER DEFAULT 1,path TEXT DEFAULT '',description TEXT DEFAULT '')");
  sql("CREATE TABLE IF NOT EXISTS profiles(name TEXT PRIMARY KEY,path TEXT,capcodes TEXT DEFAULT '',enabled INTEGER DEFAULT 0)");
- all_=new QSqlQueryModel(this);saved_=new QSqlQueryModel(this);
+ sql("CREATE TABLE IF NOT EXISTS journal_outbox(id INTEGER PRIMARY KEY,message_id INTEGER,path TEXT,line BLOB,done INTEGER DEFAULT 0)");
+ sql("CREATE INDEX IF NOT EXISTS outbox_pending ON journal_outbox(done,id)");
+ all_=new MessageModel;all_->setParent(this);saved_=new MessageModel;saved_->setParent(this);
  auto central=new QWidget;auto layout=new QVBoxLayout(central);setCentralWidget(central);
  auto toolbar=addToolBar("Réception");toolbar->setMovable(false);
  auto add=[&](QString title,auto fn){auto a=toolbar->addAction(title);connect(a,&QAction::triggered,this,fn);return a;};
@@ -48,7 +64,7 @@ Window::Window(QString storageDirectory){
  menuBar()->addMenu("Capcodes")->addAction(capAction);menuBar()->addMenu("Décodage")->addAction("Redémarrer la chaîne",this,[this]{start(radio_.config.file);});menuBar()->addMenu("Outils")->addAction(logAction);
  auto viewMenu=menuBar()->addMenu("Affichage");auto help=menuBar()->addMenu("Aide");help->addAction("À propos",this,[this]{QMessageBox::information(this,"POCSAG SDR Pro","Version 0.1.0\nRéception RTL-SDR directe et fichiers IQ CU8.\nAucune validation matérielle à ce stade.\nLe type est déduit de la fonction : 0 numérique, 1–3 alpha.\nHackRF et multicanal non disponibles dans cette version.");});
  auto settings=new QHBoxLayout;layout->addLayout(settings);devices_=new QComboBox;devices_->addItems(Receiver::devices());settings->addWidget(new QLabel("Appareil SDR :"));settings->addWidget(devices_);
- frequency_=new QDoubleSpinBox;frequency_->setRange(24,1766);frequency_->setDecimals(6);frequency_->setValue(146.95);frequency_->setSuffix(" MHz");settings->addWidget(frequency_);
+ frequency_=new QDoubleSpinBox;frequency_->setRange(24,1766);frequency_->setDecimals(6);frequency_->setValue(169.626);frequency_->setSuffix(" MHz");settings->addWidget(frequency_);
  gain_=new QDoubleSpinBox;gain_->setRange(0,50);gain_->setValue(42);gain_->setSuffix(" dB");settings->addWidget(gain_);ppm_=new QDoubleSpinBox;ppm_->setRange(-200,200);ppm_->setSuffix(" PPM");settings->addWidget(ppm_);
  baud_=new QComboBox;baud_->addItems({"AUTO","512","1200","2400"});settings->addWidget(baud_);settings->addWidget(new QLabel("IQ : 240 kS/s • canal centré"));status_=new QLabel("Réception arrêtée");settings->addWidget(status_,1);
  spectrum_=new Spectrum;layout->addWidget(spectrum_);
@@ -57,8 +73,9 @@ Window::Window(QString storageDirectory){
  panel("TOUS LES MESSAGES POCSAG",all_,allView_,search_);auto bottom=panel("MESSAGES DES CAPCODES ENREGISTRÉS",saved_,savedView_,savedSearch_);split->setSizes({420,220});auto visible=viewMenu->addAction("Panneau des capcodes enregistrés");visible->setCheckable(true);visible->setChecked(true);connect(visible,&QAction::toggled,bottom,&QWidget::setVisible);
  auto scroll=viewMenu->addAction("Défilement automatique");scroll->setCheckable(true);scroll->setChecked(true);connect(scroll,&QAction::toggled,this,[this](bool v){autoscroll_=v;});
  auto logs=new QHBoxLayout;layout->addLayout(logs);logging_=new QCheckBox("Enregistrement TXT");generalCopy_=new QCheckBox("Copie journal général");logPath_=new QLineEdit;auto choose=new QPushButton("Choisir un autre fichier…");logs->addWidget(logging_);logs->addWidget(generalCopy_);logs->addWidget(logPath_,1);logs->addWidget(choose);connect(choose,&QPushButton::clicked,this,[this]{auto f=QFileDialog::getSaveFileName(this,"Journal texte (ajout sans effacement)",logPath_->text(),"Texte (*.txt)");if(!f.isEmpty())logPath_->setText(f);});count_=new QLabel;statusBar()->addPermanentWidget(count_);
- QSettings s;frequency_->setValue(s.value("frequency",146.95).toDouble());gain_->setValue(s.value("gain",42).toDouble());ppm_->setValue(s.value("ppm",0).toDouble());logPath_->setText(s.value("log",dir+"/general.txt").toString());logging_->setChecked(s.value("logging",false).toBool());generalCopy_->setChecked(s.value("generalCopy",true).toBool());restoreGeometry(s.value("geometry").toByteArray());
+ QSettings s;frequency_->setValue(s.value("frequency",169.626).toDouble());gain_->setValue(s.value("gain",42).toDouble());ppm_->setValue(s.value("ppm",0).toDouble());logPath_->setText(s.value("log",dir+"/general.txt").toString());logging_->setChecked(s.value("logging",false).toBool());generalCopy_->setChecked(s.value("generalCopy",true).toBool());restoreGeometry(s.value("geometry").toByteArray());
  connect(&radio_,&Receiver::samples,spectrum_,&Spectrum::updateIq);connect(&radio_,&Receiver::decoded,this,[this](quint32 ric,int function,int baud,QString type,QString text,int corrected,quint32 frequency,QString receiver){received({ric,function,baud,type.toStdString(),text.toStdString(),corrected},frequency,receiver);});connect(&radio_,&Receiver::problem,this,&Window::failure);connect(&radio_,&Receiver::state,status_,&QLabel::setText);refresh();
+ auto retryJournal=new QTimer(this);retryJournal->setInterval(10000);connect(retryJournal,&QTimer::timeout,this,&Window::flushJournal);retryJournal->start();QTimer::singleShot(0,this,&Window::flushJournal);
  setStyleSheet("QWidget{background:#071425;color:#e6eefb;font-family:'Segoe UI';font-size:12px} QToolBar,QMenuBar,QHeaderView::section{background:#122841;padding:6px} QPushButton,QToolButton{background:#193753;border:1px solid #53708b;border-radius:4px;padding:6px} QLineEdit,QComboBox,QDoubleSpinBox{background:#0b1e33;border:1px solid #4c647d;padding:5px} QTableView{alternate-background-color:#102238;selection-background-color:#005dc8;gridline-color:#193047} QLabel{padding:3px} QSplitter::handle{background:#285074;height:5px}");
 }
 Window::~Window(){radio_.stop();QSettings s;s.setValue("frequency",frequency_->value());s.setValue("gain",gain_->value());s.setValue("ppm",ppm_->value());s.setValue("log",logPath_->text());s.setValue("logging",logging_->isChecked());s.setValue("generalCopy",generalCopy_->isChecked());s.setValue("geometry",saveGeometry());}
@@ -69,18 +86,35 @@ void Window::start(QString file){
 }
 void Window::received(pocsag::Message m,quint32 frequency,QString receiver){
  if(!frequency)frequency=radio_.config.frequency;if(receiver.isEmpty())receiver=radio_.config.file.isEmpty()?devices_->currentText():radio_.config.file;
- QSqlQuery q(db_);q.prepare("INSERT INTO messages(timestamp,frequency,baud,ric,function,type,text,corrected,receiver) VALUES(?,?,?,?,?,?,?,?,?)");auto now=QDateTime::currentDateTime().toString(Qt::ISODateWithMs);q.addBindValue(now);q.addBindValue(frequency);q.addBindValue(m.baud);q.addBindValue(m.ric);q.addBindValue(m.function);q.addBindValue(QString::fromStdString(m.type));q.addBindValue(QString::fromStdString(m.text));q.addBindValue(m.corrected);q.addBindValue(receiver);if(!q.exec()){failure(q.lastError().text());return;}
+ if(!db_.transaction()){failure(db_.lastError().text());return;}
+ QSqlQuery q(db_);q.prepare("INSERT INTO messages(timestamp,frequency,baud,ric,function,type,text,corrected,receiver) VALUES(?,?,?,?,?,?,?,?,?)");auto now=QDateTime::currentDateTime().toString(Qt::ISODateWithMs);q.addBindValue(now);q.addBindValue(frequency);q.addBindValue(m.baud);q.addBindValue(m.ric);q.addBindValue(m.function);q.addBindValue(QString::fromStdString(m.type));q.addBindValue(QString::fromStdString(m.text));q.addBindValue(m.corrected);q.addBindValue(receiver);if(!q.exec()){db_.rollback();failure(q.lastError().text());return;}
  if(logging_->isChecked()){
   std::set<QString> paths;QSqlQuery cap(db_);cap.prepare("SELECT path FROM capcodes WHERE ric=? AND active=1");cap.addBindValue(m.ric);cap.exec();if(cap.next()&&!cap.value(0).toString().isEmpty())paths.insert(QFileInfo(cap.value(0).toString()).absoluteFilePath());
   if(generalCopy_->isChecked()||paths.empty())if(!logPath_->text().isEmpty())paths.insert(QFileInfo(logPath_->text()).absoluteFilePath());
   QSqlQuery profiles("SELECT path,capcodes FROM profiles WHERE enabled=1",db_);while(profiles.next()){auto rics=profiles.value(1).toString().split(',',Qt::SkipEmptyParts);bool match=rics.isEmpty();for(const auto& r:rics)if(r.trimmed().toUInt()==m.ric)match=true;if(match&&!profiles.value(0).toString().isEmpty())paths.insert(QFileInfo(profiles.value(0).toString()).absoluteFilePath());}
-  auto line=QString("%1 | %2 MHz | %3 | %4 | F%5 | %6 | %7\r\n").arg(now).arg(frequency/1e6,0,'f',6).arg(m.baud).arg(m.ric,7,10,QChar('0')).arg(m.function).arg(QString::fromStdString(m.type),QString::fromStdString(m.text).replace('\n',"\\n").replace('\r',"\\r")).toUtf8();
-  for(auto& path:paths){QFile f(path);if(!f.open(QIODevice::WriteOnly|QIODevice::Append)||f.write(line)!=line.size()||!f.flush()){status_->setText("Échec journal TXT : "+path+" — message conservé dans SQLite");}}
- }refresh();
+  auto line=("["+QUuid::createUuid().toString(QUuid::WithoutBraces)+"] "+QString("%1 | %2 MHz | %3 | %4 | F%5 | %6 | %7\r\n").arg(now).arg(frequency/1e6,0,'f',6).arg(m.baud).arg(m.ric,7,10,QChar('0')).arg(m.function).arg(QString::fromStdString(m.type),QString::fromStdString(m.text).replace('\n',"\\n").replace('\r',"\\r"))).toUtf8();
+  for(auto& path:paths){QSqlQuery queued(db_);queued.prepare("INSERT INTO journal_outbox(message_id,path,line) VALUES(?,?,?)");queued.addBindValue(q.lastInsertId());queued.addBindValue(path);queued.addBindValue(line);if(!queued.exec()){db_.rollback();failure(queued.lastError().text());return;}}
+ }if(!db_.commit()){db_.rollback();failure(db_.lastError().text());return;}flushJournal();refresh();
+}
+void Window::flushJournal(){
+ QSqlQuery pending("SELECT id,path,line FROM journal_outbox WHERE done=0 ORDER BY id LIMIT 1000",db_);
+ struct Entry{QVariant id;QString path;QByteArray line;};QVector<Entry> entries;while(pending.next())entries.append({pending.value(0),pending.value(1).toString(),pending.value(2).toByteArray()});pending.finish();
+ for(const auto& e:entries){
+  QLockFile lock(e.path+".pocsag.lock");if(!lock.tryLock(0)){status_->setText("Journal en attente (verrouillé) : "+e.path);continue;}
+  QFile f(e.path);if(!f.open(QIODevice::ReadWrite|QIODevice::Append)){status_->setText("Journal en attente : "+e.path+" — "+f.errorString());continue;}
+  f.seek(std::max(qint64(0),f.size()-std::max(qint64(65536),qint64(e.line.size())*2)));auto tail=f.readAll();
+  if(!tail.contains(e.line)){
+   if(!tail.isEmpty()&&!tail.endsWith('\n')&&f.write("\r\n")!=2)continue;
+   if(f.write(e.line)!=e.line.size()||!f.flush()){status_->setText("Échec écriture TXT : "+e.path);continue;}
+  }
+  QSqlQuery done(db_);done.prepare("UPDATE journal_outbox SET done=1 WHERE id=?");done.addBindValue(e.id);if(!done.exec())status_->setText("Échec validation journal : "+done.lastError().text());
+ }
 }
 void Window::refresh(){
  auto query=[&](bool saved,QString filter){QString select="SELECT substr(m.timestamp,12,8) AS Heure,substr(m.timestamp,1,10) AS Date,printf('%.6f',m.frequency/1000000.0) AS MHz,m.baud AS Baud,printf('%07d',m.ric) AS Capcode,m.function AS Fonction,m.type AS Type,";if(saved)select+="c.alias AS Alias,";select+="m.text AS Message FROM messages m LEFT JOIN capcodes c ON c.ric=m.ric WHERE 1=1 ";if(saved)select+="AND c.active=1 AND c.show_bottom=1 ";if(!filter.isEmpty()){filter.replace("'","''");select+="AND (m.text LIKE '%"+filter+"%' OR printf('%07d',m.ric) LIKE '%"+filter+"%' OR c.alias LIKE '%"+filter+"%') ";}return select+"ORDER BY m.id ASC";};
- all_->setQuery(query(false,search_->text()),db_);saved_->setQuery(query(true,savedSearch_->text()),db_);QSqlQuery q("SELECT count(*) FROM messages",db_);q.next();count_->setText("Messages enregistrés : "+q.value(0).toString());if(autoscroll_){allView_->scrollToBottom();savedView_->scrollToBottom();}
+ QHash<QString,QColor> colors;QSqlQuery colorQuery("SELECT printf('%07d',ric),color FROM capcodes",db_);while(colorQuery.next())colors.insert(colorQuery.value(0).toString(),QColor(colorQuery.value(1).toString()));
+ static_cast<MessageModel*>(all_)->colors=colors;static_cast<MessageModel*>(saved_)->colors=colors;
+ static_cast<MessageModel*>(all_)->apply(query(false,search_->text()),db_);static_cast<MessageModel*>(saved_)->apply(query(true,savedSearch_->text()),db_);QSqlQuery q("SELECT count(*) FROM messages",db_);q.next();count_->setText("Messages enregistrés : "+q.value(0).toString());if(autoscroll_){allView_->scrollToBottom();savedView_->scrollToBottom();}
 }
 void Window::copyTable(QTableView* view){QStringList lines;for(const auto& idx:view->selectionModel()->selectedRows()){QStringList cells;for(int c=0;c<view->model()->columnCount();++c)cells<<view->model()->index(idx.row(),c).data().toString();lines<<cells.join('\t');}QApplication::clipboard()->setText(lines.join('\n'));}
 void Window::exportTable(QTableView* view){
@@ -89,7 +123,7 @@ void Window::exportTable(QTableView* view){
 void Window::capcodes(){
  QDialog d(this);d.setWindowTitle("GESTION DES CAPCODES ENREGISTRÉS");d.resize(1100,580);auto l=new QVBoxLayout(&d);auto info=new QLabel("Capcode 0 à 2097151 • couleur au format #RRGGBB • journal TXT en ajout UTF-8");l->addWidget(info);
  auto t=new QTableWidget(0,8);t->setHorizontalHeaderLabels({"Capcode","Alias","Couleur","Actif","Afficher en bas","Fichier texte associé","Description",""});t->horizontalHeader()->setStretchLastSection(true);l->addWidget(t);
- auto row=[&](QStringList values){int r=t->rowCount();t->insertRow(r);for(int c=0;c<7;++c){auto item=new QTableWidgetItem(values.value(c));if(c==3||c==4){item->setCheckState(values.value(c).toInt()?Qt::Checked:Qt::Unchecked);}t->setItem(r,c,item);}auto browse=new QPushButton("…");t->setCellWidget(r,7,browse);connect(browse,&QPushButton::clicked,&d,[&,r]{auto f=QFileDialog::getSaveFileName(&d,"Journal associé",{},"TXT (*.txt)");if(!f.isEmpty())t->item(r,5)->setText(f);});};
+ auto row=[&](QStringList values){int r=t->rowCount();t->insertRow(r);for(int c=0;c<7;++c){auto item=new QTableWidgetItem(values.value(c));if(c==3||c==4){item->setCheckState(values.value(c).toInt()?Qt::Checked:Qt::Unchecked);}t->setItem(r,c,item);}auto browse=new QPushButton("…");t->setCellWidget(r,7,browse);connect(browse,&QPushButton::clicked,&d,[&,browse]{auto f=QFileDialog::getSaveFileName(&d,"Journal associé",{},"TXT (*.txt)");if(!f.isEmpty())for(int row=0;row<t->rowCount();++row)if(t->cellWidget(row,7)==browse)t->item(row,5)->setText(f);});};
  QSqlQuery q("SELECT ric,alias,color,active,show_bottom,path,description FROM capcodes ORDER BY ric",db_);while(q.next()){QStringList v;v<<QString("%1").arg(q.value(0).toUInt(),7,10,QChar('0'));for(int c=1;c<7;++c)v<<q.value(c).toString();row(v);}
  auto bar=new QHBoxLayout;l->addLayout(bar);auto add=new QPushButton("Ajouter");auto del=new QPushButton("Supprimer");auto imp=new QPushButton("Importer JSON");auto exp=new QPushButton("Exporter JSON");bar->addWidget(add);bar->addWidget(del);bar->addWidget(imp);bar->addWidget(exp);connect(add,&QPushButton::clicked,&d,[&]{row({"0000000","","#47d7ff","1","1","",""});});connect(del,&QPushButton::clicked,&d,[&]{if(t->currentRow()>=0)t->removeRow(t->currentRow());});
  connect(exp,&QPushButton::clicked,&d,[&]{auto f=QFileDialog::getSaveFileName(&d,"Exporter capcodes",{},"JSON (*.json)");if(f.isEmpty())return;QJsonArray arr;for(int r=0;r<t->rowCount();++r){QJsonArray a;for(int c=0;c<7;++c)a.append(c==3||c==4?QString::number(t->item(r,c)->checkState()==Qt::Checked):t->item(r,c)->text());arr.append(a);}QSaveFile file(f);if(file.open(QIODevice::WriteOnly)){file.write(QJsonDocument(arr).toJson());file.commit();}});
