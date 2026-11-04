@@ -1,0 +1,6 @@
+.tools/
+build*/
+dist/
+*.db*
+*.user
+aqtinstall.log
