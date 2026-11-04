@@ -2,7 +2,7 @@
 
 ## Résultats locaux
 
-Compilation Windows Release x64 : GCC 13.1 / Qt 6.8.3. Trois suites CTest passent : moteur, intégration Qt/SQLite/journaux, références IQ indépendantes. GitHub Actions vérifie également la version avant publication.
+Compilation Windows Release x64 : GCC 13.1 / Qt 6.8.3. Trois suites CTest passent : moteur, intégration Qt/SQLite/journaux, références IQ indépendantes. Les jobs GitHub Actions 0.1.2 sont bloqués avant démarrage par le budget du compte. Aucun résultat CI de cette version : ZIP construit et testé localement.
 
 ## Tests synthétiques internes
 
@@ -54,3 +54,4 @@ Les rapports ne contiennent que compteurs et empreintes. Captures, adresses et t
 - Conservation SQLite manuelle avec confirmation ; aucune suppression des TXT. Pas de qualification 24 h/24, coupures électriques, disque plein, stockage réseau ou modifications externes concurrentes prolongées. La reprise cherche la ligne dans la fin du fichier.
 - Pas de HackRF, multicanal, reconnexion USB automatique ou démarrage Windows automatique. Rafraîchissement des grands historiques à optimiser.
 - Sauvegarde/restauration par interface, sélection à la souris et déplacement dans le spectre restent hors de cette version. Aucun SNR artificiel.
+

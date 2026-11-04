@@ -20,3 +20,5 @@ Limites : AUTO reste volontairement conservateur ; choisir le mode du réseau/ca
 Pas de promesse de déchiffrement ou récupération de signaux dégradés. HackRF, multicanal,
 reconnexion USB automatique et qualification 24 h/24 restent hors de cette version.
 Voir docs/VALIDATION.md pour les résultats exacts et les normalisations de comparaison.
+
+Publication : le budget GitHub Actions du compte bloque les jobs avant démarrage. Ce ZIP est construit et validé localement ; la CI 0.1.2 ne peut pas être exécutée. La facturation reste inchangée.

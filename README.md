@@ -71,3 +71,5 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 GitHub Actions utilise MinGW x64 et inclut ses DLL pour un ZIP portable. Les tags `v*` publient une préversion après tests. Moteur seul : `-DBUILD_GUI=OFF`.
 
 Voir [validation](docs/VALIDATION.md), [notes 0.1.2](docs/RELEASE-0.1.2.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
+
+Pour 0.1.2, le budget Actions bloque les jobs : le ZIP est construit et testé localement puis publié dans GitHub Releases. La CI devra être relancée après rétablissement du budget.
