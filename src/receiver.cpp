@@ -15,8 +15,9 @@ QStringList Receiver::devices(){
 }
 void Receiver::run(){
  stopping=false;
- pocsag::Demodulator dsp([this](pocsag::Message m){emit decoded(m.ric,m.function,m.baud,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,config.frequency,config.file.isEmpty()?QString("RTL-SDR index %1").arg(config.index):config.file);},config.baud,config.rate);
- int frame=0;auto consume=[&](const QByteArray& b){dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));if((frame++%8)==0)emit samples(b);};
+ QFile capture(config.capture);if(!config.capture.isEmpty()&&!capture.open(QIODevice::WriteOnly|QIODevice::NewOnly)){emit problem("Impossible de créer la capture IQ privée : "+capture.errorString());return;}
+ pocsag::Demodulator dsp([this](pocsag::Message m){auto id=config.file.isEmpty()?QString("RTL-SDR index %1").arg(config.index):config.file;emit frame(m,config.frequency,id,QDateTime::currentDateTimeUtc());emit decoded(m.ric,m.function,m.baud,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,config.frequency,id);},config.baud,config.rate);
+ int frameIndex=0;auto consume=[&](const QByteArray& b){if(capture.isOpen()&&capture.write(b)!=b.size()){stopping=true;emit problem("Erreur écriture capture IQ");return;}dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));if((frameIndex++%8)==0)emit samples(b);};
  if(!config.file.isEmpty()){
   QFile f(config.file);if(!f.open(QIODevice::ReadOnly)){emit problem(f.errorString());return;}
   emit state("Lecture IQ CU8 hors ligne");

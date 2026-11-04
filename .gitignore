@@ -4,3 +4,8 @@ dist/
 *.db*
 *.user
 aqtinstall.log
+__pycache__/
+*.cu8
+*.raw
+*.flac
+*.wav

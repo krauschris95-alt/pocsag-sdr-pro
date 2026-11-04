@@ -1,0 +1,56 @@
+[
+  {
+    "file": "512-alpha.iqz",
+    "mode": "ALPHA",
+    "ric": 1234567,
+    "function": 3,
+    "baud": 512,
+    "type": "ALPHA",
+    "text": "REFERENCE 012 FUNCTION TEST"
+  },
+  {
+    "file": "512-numeric.iqz",
+    "mode": "NUMERIC",
+    "ric": 765432,
+    "function": 0,
+    "baud": 512,
+    "type": "NUMERIC",
+    "text": "123-456.789U]["
+  },
+  {
+    "file": "1200-alpha.iqz",
+    "mode": "ALPHA",
+    "ric": 1234567,
+    "function": 3,
+    "baud": 1200,
+    "type": "ALPHA",
+    "text": "REFERENCE 012 FUNCTION TEST"
+  },
+  {
+    "file": "1200-numeric.iqz",
+    "mode": "NUMERIC",
+    "ric": 765432,
+    "function": 0,
+    "baud": 1200,
+    "type": "NUMERIC",
+    "text": "123-456.789U]["
+  },
+  {
+    "file": "2400-alpha.iqz",
+    "mode": "ALPHA",
+    "ric": 1234567,
+    "function": 3,
+    "baud": 2400,
+    "type": "ALPHA",
+    "text": "REFERENCE 012 FUNCTION TEST"
+  },
+  {
+    "file": "2400-numeric.iqz",
+    "mode": "NUMERIC",
+    "ric": 765432,
+    "function": 0,
+    "baud": 2400,
+    "type": "NUMERIC",
+    "text": "123-456.789U]["
+  }
+]

@@ -13,15 +13,37 @@ int correct(uint32_t& v){
 void Decoder::reset(){count_=slot_=corrections_=0;shift_=0;locked_=inverted_=active_=false;payload_.clear();}
 void Decoder::finish(){
  if(!active_)return;
- Message m{ric_,function_,baud_,payload_.empty()?"TONE":(function_==0?"NUMERIC":"ALPHA"),"",corrections_};
- if(m.type=="ALPHA"){
-  for(size_t i=0;i+7<=payload_.size();i+=7){unsigned c=0;for(int j=0;j<7;++j)c|=unsigned(payload_[i+j])<<j;if(c==0||c==3||c==4)break;if(c>=32||c==10||c==13)m.text+=char(c);}
- }else if(m.type=="NUMERIC"){
-  const char* table="0123456789*U -)(";
-  for(size_t i=0;i+4<=payload_.size();i+=4){unsigned c=0;for(int j=0;j<4;++j)c|=unsigned(payload_[i+j])<<j;m.text+=table[c];}
-  while(!m.text.empty()&&m.text.back()==' ')m.text.pop_back();
+ Message m{ric_,function_,baud_,payload_.empty()?"TONE":"ALPHA","",corrections_};
+ for(bool b:payload_)m.rawBits+=b?'1':'0';
+ bool ended=false;
+ for(size_t i=0;i+7<=payload_.size();i+=7){
+  unsigned c=0;for(int j=0;j<7;++j)c|=unsigned(payload_[i+j])<<j;
+  if(c==0||c==3||c==4){ended=true;continue;}
+  if(ended){if(c!=127)m.alphaValid=false;continue;}
+  if(c>=32&&c<127)m.alpha+=char(c);
+  else if(c==9||c==10||c==13)m.alpha+=char(c);
+  else{m.alphaValid=false;m.alpha+="<0x";const char*hex="0123456789ABCDEF";m.alpha+=hex[c>>4];m.alpha+=hex[c&15];m.alpha+='>';}
  }
- output_(std::move(m));active_=false;payload_.clear();corrections_=0;
+ // Reversed-on-air numeric nibbles, CCIR 584 extended symbols.
+ const char* table="0123456789.U -][";
+ for(size_t i=0;i+4<=payload_.size();i+=4){unsigned c=0;for(int j=0;j<4;++j)c|=unsigned(payload_[i+j])<<j;m.numeric+=table[c];}
+ while(!m.numeric.empty()&&m.numeric.back()==' ')m.numeric.pop_back();
+ if(m.type!="TONE")m=interpret(std::move(m),"ALPHA");
+ output_(std::move(m));discard();
+}
+Message interpret(Message m,const std::string& mode){
+ if(m.rawBits.empty())return m;
+ if(mode=="NUMERIC"){m.type="NUMERIC";m.text=m.numeric;m.status="validated / numeric selected";}
+ else if(mode=="ALPHA"){
+  m.type=m.alphaValid&&!m.alpha.empty()?"ALPHA":"DIAGNOSTIC";m.text=m.alpha;
+  m.status=m.type=="ALPHA"?"validated / alpha selected":"BCH valid; unsupported controls or empty alpha";
+ }else{
+  // Numeric is unambiguous only within our supported ASCII/BCD character sets when
+  // the alpha interpretation is invalid and the entire numeric candidate is decimal.
+  bool decimal=!m.numeric.empty();for(char c:m.numeric)if((c<'0'||c>'9')&&c!=' '&&c!='-')decimal=false;
+  if(!m.alphaValid&&decimal){m.type="NUMERIC";m.text=m.numeric;m.status="validated / constrained auto";}
+  else{m.type="DIAGNOSTIC";m.text="Interprétation ambiguë : choisir ALPHA ou NUMERIC";m.status="BCH valid; ambiguous interpretation";}
+ }return m;
 }
 void Decoder::bit(bool b){
  shift_=(shift_<<1)|unsigned(b);
@@ -34,9 +56,9 @@ void Decoder::bit(bool b){
  word(v);++slot_;
 }
 void Decoder::word(uint32_t v){
- int n=correct(v);if(n<0){active_=false;payload_.clear();return;}
+ int n=correct(v);if(n<0){discard();return;}
  if(v==Idle){finish();return;}
  if(!(v&0x80000000)){finish();ric_=((v>>13)<<3)|(slot_/2);function_=(v>>11)&3;active_=true;corrections_=n;return;}
- if(active_){corrections_+=n;for(int i=30;i>=11;--i)payload_.push_back((v>>i)&1);}
+ if(active_){if(payload_.size()>=65520){discard();return;}corrections_+=n;for(int i=30;i>=11;--i)payload_.push_back((v>>i)&1);}
 }
 }
