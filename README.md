@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.0 en développement
+# POCSAG SDR Pro — 0.1.1 en développement
 
 Application Windows x64, C++20 / Qt 6 / SQLite. Projet indépendant.
 **Cette version n'est pas une livraison complète du cahier des charges.**
@@ -69,3 +69,4 @@ sans erreur USB ; le moteur a produit 67 messages. Leur contenu n'a pas été co
 Cela ne qualifie pas encore les performances de décodage ou le fonctionnement 24 h/24.
 
 Licence du code original : GPL-3.0-or-later, voir LICENSE.
+

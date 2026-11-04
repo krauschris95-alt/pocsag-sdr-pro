@@ -57,5 +57,6 @@ comparé à PDW : l'exactitude de ces messages et le taux de pertes ne sont pas 
 Le rapport technique ne contient aucun texte radio reçu.
 GitHub Actions Windows x64 a également compilé, testé et généré l'artefact avec succès.
 
-La version 0.1.0 est une base intégrée à tester. Elle ne doit pas être présentée comme
+La version 0.1.1 est une base intégrée à tester. Elle ne doit pas être présentée comme
 un successeur PDW finalisé ou une réception matérielle validée.
+

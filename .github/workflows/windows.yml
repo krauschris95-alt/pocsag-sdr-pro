@@ -15,10 +15,12 @@ jobs:
       - uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.3'
-          arch: win64_msvc2022_64
+          arch: win64_mingw
+          archives: qtbase qttools
+          tools: tools_mingw1310,qt.tools.win64_mingw1310
           cache: true
       - name: Configure
-        run: cmake -S . -B build -A x64
+        run: cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build --config Release --parallel 2
       - name: Test
@@ -28,6 +30,7 @@ jobs:
           cmake --install build --config Release --prefix dist/POCSAG-SDR-Pro
           windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
           ./scripts/package.ps1
+          Copy-Item "$env:IQTA_TOOLS/mingw1310_64/licenses" dist/POCSAG-SDR-Pro/licenses/MinGW -Recurse
           Compress-Archive dist/POCSAG-SDR-Pro/* dist/POCSAG-SDR-Pro-windows-x64.zip
       - uses: actions/upload-artifact@v4
         with:
