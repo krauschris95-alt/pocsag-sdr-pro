@@ -46,9 +46,10 @@ Message interpret(Message m,const std::string& mode){
  }return m;
 }
 void Decoder::bit(bool b){
+ alternations_=b!=lastBit_?alternations_+1:0;lastBit_=b;if(alternations_==575)++statistics_.preambles;
  shift_=(shift_<<1)|unsigned(b);
  if(!locked_){
-  if(shift_==Sync||shift_==~Sync){inverted_=shift_==~Sync;locked_=true;count_=slot_=0;}
+  if(shift_==Sync||shift_==~Sync){++statistics_.syncs;inverted_=shift_==~Sync;locked_=true;count_=slot_=0;}
   return;
  }
  if(++count_<32)return;count_=0;auto v=inverted_?~shift_:shift_;
@@ -56,7 +57,7 @@ void Decoder::bit(bool b){
  word(v);++slot_;
 }
 void Decoder::word(uint32_t v){
- int n=correct(v);if(n<0){discard();return;}
+ ++statistics_.words;int n=correct(v);if(n<0){++statistics_.rejected;discard();return;}statistics_.correctedBits+=n;
  if(v==Idle){finish();return;}
  if(!(v&0x80000000)){finish();ric_=((v>>13)<<3)|(slot_/2);function_=(v>>11)&3;active_=true;corrections_=n;return;}
  if(active_){if(payload_.size()>=65520){discard();return;}corrections_+=n;for(int i=30;i>=11;--i)payload_.push_back((v>>i)&1);}

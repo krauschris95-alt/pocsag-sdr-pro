@@ -8,9 +8,9 @@
 namespace pocsag {
 class Demodulator {
 public:
- explicit Demodulator(std::function<void(Message)> output,int baud=0,double rate=240000):selected_(baud),rate_(rate){
+ explicit Demodulator(std::function<void(Message)> output,int baud=0,double rate=240000,double channelBandwidth=21000):selected_(baud),rate_(rate){
   for(int b:{512,1200,2400})decoders_.push_back(std::make_unique<Decoder>(b,output));
-  double total=0;for(int n=0;n<63;++n){double t=n-31;double v=t==0?2*10500/rate:sin(2*std::numbers::pi*10500*t/rate)/(std::numbers::pi*t);taps_[n]=v*(.5-.5*cos(2*std::numbers::pi*n/62));total+=taps_[n];}for(auto& t:taps_)t/=total;
+  double cutoff=channelBandwidth/2;double total=0;for(int n=0;n<63;++n){double t=n-31;double v=t==0?2*cutoff/rate:sin(2*std::numbers::pi*cutoff*t/rate)/(std::numbers::pi*t);taps_[n]=v*(.5-.5*cos(2*std::numbers::pi*n/62));total+=taps_[n];}for(auto& t:taps_)t/=total;
  }
  void cu8(std::span<const unsigned char> bytes){
   const int bauds[]={512,1200,2400};

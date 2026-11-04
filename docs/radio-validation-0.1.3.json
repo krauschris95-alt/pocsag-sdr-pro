@@ -1,0 +1,11 @@
+{
+    "devices": "Generic RTL2832U OEM RTL2838UHIDIR — 00000001",
+    "duration_seconds": 60,
+    "error": "",
+    "frequency_hz": 169626000,
+    "hardware_read_ok": true,
+    "messages_decoded": 4,
+    "sample_rate": 240000,
+    "spectrum_bytes": 3538944,
+    "state": "Réception RTL-SDR en cours"
+}

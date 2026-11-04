@@ -16,6 +16,8 @@ struct Message {
 Message interpret(Message message,const std::string& mode);
 class Decoder {
 public:
+ struct Statistics {uint64_t preambles=0,syncs=0,words=0,rejected=0,correctedBits=0;};
+ const Statistics& statistics()const{return statistics_;}
  explicit Decoder(int baud, std::function<void(Message)> output):baud_(baud),output_(std::move(output)){}
  void bit(bool value);
  void finish();
@@ -26,5 +28,6 @@ private:
  uint32_t ric_=0; int function_=0; std::vector<bool> payload_;
  std::function<void(Message)> output_;
  void word(uint32_t value);
+ Statistics statistics_;int alternations_=0;bool lastBit_=false;
 };
 }

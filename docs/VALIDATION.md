@@ -1,3 +1,27 @@
+# Validation 0.1.3 — cahier des charges officiel
+
+## Compilation et automatisation
+
+Windows x64 Release, GCC 13.1, Qt 6.8.3 : cinq suites CTest réussies (moteur, intégration Qt/SQLite/TXT, références indépendantes, file vocale, reconnexion injectée). Le pilote de test reste hors du paquet livré. Les résultats matériels ci-dessous ne sont pas déduits des doubles de test.
+
+| Exigence | Preuve 0.1.3 | Limite |
+|---|---|---|
+| Deux tableaux et deux onglets | Tests Qt : tous les textes en haut, sélection active en bas, colonnes et onglets | Contrôle visuel séparé |
+| Voix individuelle et générale | Backend bloqué de test : alias avant texte, une seule lecture malgré deux tableaux, FIFO, limite et arrêt | Ne prouve pas toutes les cartes audio |
+| Réception pendant voix | Insertion SQLite et TXT continuent pendant blocage volontaire de la voix | Test logiciel, pas endurance matérielle |
+| Voix Windows hors ligne | SAPI natif terminé sans erreur, Hortense Desktop française | Rapport speech-validation-0.1.3.json |
+| RTL réel | 60 secondes, 169626000 Hz, 240000 éch/s, quatre messages texte, aucune erreur USB | Rapport radio-validation-0.1.3.json ; aucun texte privé publié |
+| Reconnexion | DLL de test : première ouverture interrompue, réouverture du même identifiant et reprise du décodage | Débranchement physique non réalisé |
+| Journaux | File SQLite persistante, reprise après erreur, TXT UTF-8, routage multiple, minuit Bruxelles et DST | Coupure électrique en cours d'écriture non testée |
+| Filtres | ALPHA/NUMERIC masqués restent enregistrés ; capcodes sélectionnés indépendants | TONE/diagnostics sont des refus d'ingestion explicites |
+| Paramètres et migration | Base migrée, paramètres capcodes/voix, filtres, dossiers et pas persistants | Migration sur copie de test |
+| HackRF | Backend compilé, DLL et dépendances distribuées, API et plages contrôlées | Aucun HackRF connecté : non validé matériellement |
+| Stabilité H24 | Workers séparés, watchdog et journal technique borné | Aucun essai 24 h/7 jours : non qualifié |
+
+La fréquence affichée est confirmée par l'événement de réglage matériel réussi. Un changement d'accord redémarre la chaîne, avec interruption possible. Le décodage des trois débits et les références indépendantes ci-dessous restent couverts. Aucun pourcentage de qualité ou SNR artificiel n'est affiché.
+
+## Validation du décodeur héritée de 0.1.2
+
 # Validation 0.1.2 — issue #1
 
 ## Résultats locaux

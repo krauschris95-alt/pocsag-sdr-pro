@@ -1,0 +1,8 @@
+#include "receiver.h"
+#include <QCoreApplication>
+#include <QFile>
+#include <QLibrary>
+#include <QTemporaryDir>
+#include <QTimer>
+#include <iostream>
+int main(int argc,char** argv){QCoreApplication app(argc,argv);QTemporaryDir tmp;QFile compressed(QString::fromUtf8(FIXTURE_DIRECTORY)+"/1200-alpha.iqz");if(!compressed.open(QIODevice::ReadOnly))return 2;QString fixture=tmp.path()+"/fixture.cu8";QFile file(fixture);if(!file.open(QIODevice::WriteOnly))return 2;file.write(qUncompress(compressed.readAll()));file.close();QString dll=QCoreApplication::applicationDirPath()+"/mock_rtl.dll";qputenv("POCSAG_TEST_RTL_LIBRARY",dll.toUtf8());QLibrary library(dll);if(!library.load())return 2;auto set=reinterpret_cast<void(*)(const char*)>(library.resolve("mock_fixture"));set(fixture.toUtf8().constData());Receiver radio;radio.config.deviceKey="rtl:TEST-ONLY";int errors=0,tuned=0,frames=0;QObject::connect(&radio,&Receiver::problem,&app,[&]{++errors;});QObject::connect(&radio,&Receiver::tuned,&app,[&]{++tuned;});QObject::connect(&radio,&Receiver::frame,&app,[&](pocsag::Message m){if(m.text=="REFERENCE 012 FUNCTION TEST")++frames;});QTimer::singleShot(6000,&app,[&]{radio.stop();app.quit();});radio.start();app.exec();auto frequency=reinterpret_cast<unsigned(*)()>(library.resolve("mock_frequency"));auto rate=reinterpret_cast<unsigned(*)()>(library.resolve("mock_rate"));bool passed=errors>=1&&tuned>=2&&frames>=2&&frequency()==169626000&&rate()==240000;std::cout<<"Fault injection: errors="<<errors<<" connections="<<tuned<<" known frames="<<frames<<"; "<<(passed?"PASS":"FAIL")<<'\n';return passed?0:1;}

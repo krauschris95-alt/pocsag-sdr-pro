@@ -1,7 +1,7 @@
 # Dépendances
 
 Le moteur POCSAG est une implémentation indépendante : aucun code de multimon-ng n'est copié.
-La comparaison avec multimon-ng reste à réaliser sur des captures identifiées.
+La comparaison avec multimon-ng est documentée dans VALIDATION.md.
 
 Qt 6.8.3 est lié dynamiquement (Core, GUI, Widgets, SQL et plugin SQLite), selon les licences
 LGPL v3/GPL applicables aux composants. Sources, notices et textes : https://download.qt.io/archive/qt/6.8/6.8.3/
@@ -17,6 +17,6 @@ Utiliser la distribution officielle RTL-SDR Blog pour V3/V4 : https://github.com
 Les DLL et leurs dépendances doivent correspondre à l'architecture x64.
 Respecter les licences GPL des bibliothèques RTL-SDR si elles sont redistribuées.
 Le code original de cette application est fourni sous GPL version 3 ou ultérieure ; voir LICENSE.
-HackRF : non intégré dans la version 0.1.2.
+HackRF 2026.01.2 et libusb 1.0.30 : DLL MSYS2 MinGW x64 épinglées par SHA256 dans scripts/package_hackrf.py. Licences et métadonnées dans licenses/hackrf et licenses/libusb ; sources correspondantes dans sources/. Runtime libwinpthread déployé avec MinGW. Sources officielles : https://github.com/greatscottgadgets/hackrf et https://github.com/libusb/libusb. SAPI est un composant Windows existant, sans DLL vocale redistribuée.
 
 

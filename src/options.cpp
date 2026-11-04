@@ -18,7 +18,8 @@ void Window::migrate(){
  auto column=[this](QString name,QString declaration){QSqlQuery q("PRAGMA table_info(capcodes)",db_);bool found=false;while(q.next())if(q.value(1).toString()==name)found=true;q.finish();if(!found)sql("ALTER TABLE capcodes ADD COLUMN "+name+" "+declaration);};
  if(!db_.transaction())throw std::runtime_error("Migration transaction failed");
  column("directory","TEXT DEFAULT ''");column("filename","TEXT DEFAULT ''");column("daily","INTEGER DEFAULT 0");column("interpretation","TEXT DEFAULT 'INHERIT'");column("retention_days","INTEGER DEFAULT 0");
- sql("PRAGMA user_version=2");if(!db_.commit())throw std::runtime_error("Migration commit failed");
+ column("voice_enabled","INTEGER DEFAULT 0");
+ sql("PRAGMA user_version=3");if(!db_.commit())throw std::runtime_error("Migration commit failed");
 }
 void Window::saveOptions(){
  if(!allowTone_)return;
