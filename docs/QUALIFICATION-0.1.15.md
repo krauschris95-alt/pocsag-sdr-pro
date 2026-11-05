@@ -34,3 +34,17 @@ Les essais de dimension utilisent de vraies fenêtres Qt Windows redimensionnée
 - La dernière retouche après l’essai matériel concerne uniquement le dessin abrégé des libellés de la barre d’état ; elle préserve leur valeur complète pour l’accessibilité et les infobulles. Rendu et régressions revérifiés après cette retouche.
 
 Contrôle des pixels de la capture native : les six couleurs principales de la palette sont présentes, chacune sur plus de 100 pixels (palette-check.json).
+
+
+## Paquets livrés
+
+ZIP extrait dans un dossier neuf et lancé avec PATH limité à Windows, exécutable identique par SHA-256 à la construction testée. Installateur : 223 fichiers installés comparés par SHA-256 au paquet, démarrage réussi, puis désinstallation conservant un journal TXT témoin. Aucun remplacement d’installation utilisateur.
+
+La palette claire a été vérifiée dans les captures produites par l’exécutable extrait ET par l’exécutable installé (delivered-theme-check.json). Les exécutables contiennent effectivement le thème ; les captures ne sont pas une maquette générée. Les empreintes des deux téléchargements sont dans release-assets.json.
+
+La publication automatique conserve désormais une préversion déjà publiée et qualifiée, pour éviter qu’un travail CI ultérieur remplace silencieusement les binaires dont les empreintes ont été vérifiées. Les nouveaux tags sans préversion existante conservent leur publication automatique et les artefacts Actions restent produits par la compilation.
+
+
+## Première compilation distante
+
+GitHub Actions a effectivement repris : run 42116638811, source 624ffe2. Configure, Build et Test réussis sur Windows-2022 ; Deploy échoue ensuite dans l’assemblage Python 3.15.2 avec module backports.zstd absent, puis compilateur NSIS introuvable. Aucun artefact publié par ce premier run. Le workflow fixe désormais Python 3.12 (même branche que le runtime local 3.12.14) et arrête immédiatement les commandes natives en échec. Les paquets de la préversion restent les binaires locaux déjà qualifiés ; la réussite du nouvel essai CI doit être vérifiée séparément.

@@ -12,6 +12,9 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.3'
@@ -27,9 +30,11 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Deploy
         run: |
+          $ErrorActionPreference='Stop'
+          $PSNativeCommandUseErrorActionPreference=$true
           cmake --install build --config Release --prefix dist/POCSAG-SDR-Pro
           windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
-          python -m pip install backports.zstd
+          python -m pip install --only-binary=:all: backports.zstd
           ./scripts/package.ps1
           python scripts/package_hackrf.py dist/POCSAG-SDR-Pro hackrf-cache
           Copy-Item "$env:IQTA_TOOLS/mingw1310_64/licenses" dist/POCSAG-SDR-Pro/licenses/MinGW -Recurse
@@ -50,10 +55,25 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Preserve already qualified release assets
+        id: release_check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          existing="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName --jq "any(.[]; .tagName == \"$GITHUB_REF_NAME\")")"
+          if [ "$existing" = "true" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.release_check.outputs.publish == 'true'
         with:
           name: POCSAG-SDR-Pro-windows-x64
       - uses: softprops/action-gh-release@v2
+        if: steps.release_check.outputs.publish == 'true'
         with:
           prerelease: true
           body_path: docs/RELEASE-0.1.15.md

@@ -1,0 +1,20 @@
+{
+  "portable": {
+    "glacier_palette_in_delivered_executable": true,
+    "pixels": {
+      "#F0F4F8": 113695,
+      "#FFFFFF": 872825,
+      "#DCEAF7": 108809,
+      "#24649A": 88563
+    }
+  },
+  "installed": {
+    "glacier_palette_in_delivered_executable": true,
+    "pixels": {
+      "#F0F4F8": 113701,
+      "#FFFFFF": 872825,
+      "#DCEAF7": 108809,
+      "#24649A": 88563
+    }
+  }
+}
