@@ -9,6 +9,6 @@
 
 PrivateRadio : préférences et contrat hors ligne seulement, aucun transfert actif.
 
-Qualification détaillée : docs/QUALIFICATION-0.1.6.md. Windows 10/AMD/autres SDR et H24 non qualifiés. La clé RTL présente reste inaccessible pendant cette session (erreur USB -3) : aucune nouvelle réception matérielle réussie annoncée. Les essais réels antérieurs 0.1.5 sont conservés et distingués des tests de cette version.
+Qualification détaillée : docs/QUALIFICATION-0.1.6.md. Windows 10/AMD/autres SDR et H24 non qualifiés. Après libération de la clé : RTL natif 60 s réussi (18 textes, Save pendant réception, TXT, voyant vert/rouge), puis SoapyRTL 5 min réussi (65 textes, aucune erreur remontée). Capture Soapy privée supplémentaire : 3/3 textes exacts face à multimon-ng, sans manquant ni supplémentaire sur cet échantillon. Les mêmes binaires distribués ont été contrôlés par SHA256. Deux SDR physiques et H24 restent non testés.
 
 Paquets compilés localement sur Windows 11 Pro / Intel / Qt 6.8.3 / MinGW 13.1. Le run Actions #19 est bloqué avant démarrage par le budget du compte : aucun artefact Actions disponible pour cette version. ZIP et installateur construits localement ; tests et provenances dans le rapport.

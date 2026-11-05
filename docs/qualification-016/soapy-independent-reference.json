@@ -1,0 +1,39 @@
+{
+  "512": {
+    "source_sha256": "f9b99b07194bcc48291ae8bafeb3bb38117c1802bd65059e10415888249ef68b",
+    "reference": 1,
+    "application": 1,
+    "capcode_function_baud_matches": 1,
+    "exact_type_text_matches": 1,
+    "missed": 0,
+    "extra": 0
+  },
+  "1200": {
+    "source_sha256": "4f9c0a644aec9ded6f6843b9b18030007ef1412deefc73c8ecc21152a45618f0",
+    "reference": 1,
+    "application": 1,
+    "capcode_function_baud_matches": 1,
+    "exact_type_text_matches": 1,
+    "missed": 0,
+    "extra": 0
+  },
+  "2400": {
+    "source_sha256": "b2237bf5633c2119cf9a7c0bc84f1a6a30a1c2a5dd4b975b43acbc227dc957b0",
+    "reference": 1,
+    "application": 1,
+    "capcode_function_baud_matches": 1,
+    "exact_type_text_matches": 1,
+    "missed": 0,
+    "extra": 0
+  },
+  "private_rf_capture": {
+    "sha256": "b69648f3151aae6a6763d818a869c23d834245126e39f27bcd5b218009510dd0",
+    "reference": 3,
+    "application": 3,
+    "capcode_function_baud_matches": 3,
+    "exact_type_text_matches": 3,
+    "missed": 0,
+    "extra": 0,
+    "non_text_control_payload_matches": 0
+  }
+}

@@ -112,7 +112,7 @@ Le tableau supérieur ajoute Fréquence ; Affichage permet de montrer Source. Le
 
 | Famille | Distribution / qualification |
 |---|---|
-| RTL-SDR | Natif Blog V1.4.0 + SoapyRTL inclus. Récepteur OEM testé en 0.1.5 ; nouvelle compilation DLL et voie Soapy à qualifier matériellement en 0.1.6. V3/V4 spécifiques non testés. |
+| RTL-SDR | Natif Blog V1.4.0 + SoapyRTL inclus. Récepteur OEM testé en 0.1.6 : nouvelle DLL native 60 s avec Save/TXT, voie Soapy 5 min sans erreur remontée. V3/V4 spécifiques non testés. |
 | HackRF | Bibliothèque native incluse ; pas de matériel disponible pour qualification. |
 | Airspy / HF+, SDRplay, Lime, bladeRF, Pluto, USRP, Funcube | Extension possible par modules appropriés, **non inclus et non testés**. Aucune reconnaissance ou réception garantie. |
 
@@ -133,3 +133,6 @@ python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.
 ```
 
 Les archives tierces sont épinglées par SHA256 et leurs sources/licences accompagnent le paquet. GitHub Actions définit compilation, tests, ZIP et installateur ; un épuisement du budget du compte peut empêcher le job de démarrer. Un paquet construit localement est alors explicitement identifié comme tel.
+
+
+Complément de qualification après libération de la clé : voie RTL native 60 s / 18 textes avec Save et TXT, SoapyRTL 300 s / 65 textes, puis capture Soapy distincte de 60 s avec 3/3 textes exacts face à multimon-ng. Les binaires téléchargés restent identiques ; consulter le rapport actuel et les notes de Release pour ces résultats postérieurs à la construction du ZIP. Les captures et textes réels ne sont pas distribués.

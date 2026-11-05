@@ -1,0 +1,22 @@
+{
+  "POCSAG-SDR-Pro.exe": {
+    "tested_sha256": "da6cc6634b28f12f37a48a747ce9c592482f8b1e02b6722ce26dd679402a5d93",
+    "packaged_sha256": "da6cc6634b28f12f37a48a747ce9c592482f8b1e02b6722ce26dd679402a5d93",
+    "identical": true
+  },
+  "rtlsdr.dll": {
+    "tested_sha256": "7fa2ffe058f372475055e46d492311faf22fb49278e8f72cbc27d1440cf6ccdb",
+    "packaged_sha256": "7fa2ffe058f372475055e46d492311faf22fb49278e8f72cbc27d1440cf6ccdb",
+    "identical": true
+  },
+  "libSoapySDR.dll": {
+    "tested_sha256": "fb696cb32fde508200865a3e520691f9acc1ee2cd26daa279f303f8309dd1f11",
+    "packaged_sha256": "fb696cb32fde508200865a3e520691f9acc1ee2cd26daa279f303f8309dd1f11",
+    "identical": true
+  },
+  "sdr-modules/librtlsdrSupport.dll": {
+    "tested_sha256": "5e32c25510a75646d0915b9408c3335fcad27df3d7affe4ff766ae0d94bea7d3",
+    "packaged_sha256": "5e32c25510a75646d0915b9408c3335fcad27df3d7affe4ff766ae0d94bea7d3",
+    "identical": true
+  }
+}

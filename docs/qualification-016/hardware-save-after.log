@@ -1,0 +1,5 @@
+Hardware IQ green=1 save_running=1 real_texts=18 TXT=1 red_after_stop=1
+PASS capcode Save, validation, rollback, paths, backup and persistence
+Found Rafael Micro R828D tuner
+Found Rafael Micro R828D tuner
+[R82XX] PLL not locked!
