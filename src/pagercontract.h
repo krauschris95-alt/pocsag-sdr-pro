@@ -6,3 +6,6 @@ inline bool pagerEligible(bool generalEnabled,bool registered,bool perCapcode){r
 inline QJsonObject pagerEnvelope(QString eventId,quint32 capcode,QString alias,QDateTime utc,quint32 hz,QString source,QString text){
  return {{"schema",1},{"message_id",eventId},{"capcode",QString("%1").arg(capcode,7,10,QChar('0'))},{"alias",alias},{"timestamp_utc",utc.toUTC().toString(Qt::ISODateWithMs)},{"frequency_hz",double(hz)},{"source",source},{"text",text},{"utterance",alias.isEmpty()?text:alias+". "+text}};
 }
+
+// v1 fields are preserved. Local paths never cross the remote adapter boundary.
+inline QJsonObject pagerRemoteEnvelope(QJsonObject value){auto audio=value["audio"].toObject();audio.remove("path");value["audio"]=audio;return value;}

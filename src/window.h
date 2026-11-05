@@ -2,6 +2,7 @@
 #include "decoder.h"
 #include "receiver.h"
 #include "speech.h"
+#include "pagerworker.h"
 #include "journalworker.h"
 #include <QMainWindow>
 #include <QSqlDatabase>
@@ -57,6 +58,7 @@ private:
  QString generalJournalPath(QDateTime timestamp)const;
  static QString dailyPath(QString root,QString name,QDateTime timestamp);
  QString settingsFile_,bootstrapFile_;
+ std::unique_ptr<PagerWorker> pagerWorker_;PagerSettings pagerSettings_;void pagerOptions();void startPagerWorker();
  SpeechService speech_;SpeechSettings speechSettings_;std::unique_ptr<JournalWorker> journalWorker_;
  QTabWidget* tabs_=nullptr;QSplitter* messageSplit_=nullptr;QLabel* frequencyDisplay_=nullptr;
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;

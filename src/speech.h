@@ -7,6 +7,7 @@
 #include <deque>
 #include <atomic>
 #include <memory>
+#include <stdexcept>
 struct SpeechChoice { QString id,name; bool french=false; };
 struct SpeechSettings { bool enabled=false; QString voice,output; int volume=80,rate=0,limit=50; bool dropOldest=false; };
 struct SpeechJob { QString eventId,alias,text; };
@@ -15,6 +16,8 @@ public:
  virtual ~SpeechBackend()=default;
  virtual void configure(const SpeechSettings&)=0;
  virtual void speak(const QString&,const std::atomic_bool& cancel)=0;
+ virtual void synthesize(const QString&,const QString&,const std::atomic_bool&){throw std::runtime_error("Génération WAV indisponible");}
+ virtual QString diagnostic()const{return "Backend de test";}
 };
 class SpeechService:public QThread {
  Q_OBJECT
@@ -30,6 +33,7 @@ public:
  void shutdown();
  int pending();
 signals:
+ void diagnostic(QString message);
  void problem(QString message);
  void speaking(QString eventId);
  void completed(QString eventId);
@@ -40,3 +44,5 @@ private:
  SpeechSettings settings_;std::unique_ptr<SpeechBackend> backend_;
  bool closing_=false;std::atomic_bool cancel_{false};
 };
+
+std::unique_ptr<SpeechBackend> makeWindowsSpeechBackend();
