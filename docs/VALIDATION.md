@@ -1,3 +1,7 @@
+## 0.1.14 — ordre d’arrivée et visibilité des nouveautés
+
+Régression reproduite avec en-têtes triés mémorisés, puis corrigée. Tests et réception matérielle documentés dans [QUALIFICATION-0.1.14.md](QUALIFICATION-0.1.14.md). Aucun changement du moteur POCSAG ni des données utilisateur.
+
 Validation courante : [qualification 0.1.11](QUALIFICATION-0.1.11.md).
 
 Validation courante : [qualification 0.1.10](QUALIFICATION-0.1.10.md).

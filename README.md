@@ -1,3 +1,7 @@
+## Correctif 0.1.14 — nouveaux messages visibles
+
+Les deux tableaux reprennent toujours l’ordre d’arrivée au démarrage. Le tri d’une ancienne session ne peut plus ranger silencieusement les nouvelles réceptions par texte ou par heure. Le bouton flèche vers le bas « Derniers messages » restaure cet ordre et rejoint le bas du tableau ; la consultation manuelle reste possible. Voir [qualification 0.1.14](docs/QUALIFICATION-0.1.14.md).
+
 # POCSAG SDR Pro — 0.1.13
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
