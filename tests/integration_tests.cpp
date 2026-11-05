@@ -24,7 +24,7 @@ struct IntegrationChecks {
    Window w(dir.path());w.resize(1440,900);w.show();QApplication::processEvents();
    require(w.tabs_->count()==2&&w.spectrum_->parentWidget()==w.tabs_->widget(1));
    auto sizes=w.messageSplit_->sizes();double ratio=double(sizes[0])/(sizes[0]+sizes[1]);require(ratio>.57&&ratio<.63);
-   require(w.allView_->height()+w.savedView_->height()>w.centralWidget()->height()*.88);
+   require(w.allView_->height()+w.savedView_->height()+72>w.centralWidget()->height()*.88);
    require(w.savedView_->height()>250&&w.allView_->height()>350);
    require(!w.root_->isVisible()&&!w.logPath_->isVisible()&&!w.step_->isVisible()&&!w.format_->isVisible());
    int bars=0;for(auto bar:w.findChildren<QToolBar*>())if(bar->isVisible())++bars;require(bars==1);

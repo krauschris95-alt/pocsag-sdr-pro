@@ -1,3 +1,9 @@
+## Version 0.1.15 — Clair Professionnel — Bleu Glacier
+
+Nouveau thème clair fidèle à la maquette : deux tableaux à titres bleus, fond blanc alterné bleu pâle, alias colorés, état SDR/BCH et fréquence à droite. Les fenêtres secondaires utilisent aussi le thème clair. Dans **Affichage → Thème**, le sombre reste disponible ; **Taille du texte** propose Compacte, Normale et Grande. Les deux choix sont mémorisés. Le clair devient le défaut des configurations qui ne contiennent pas encore de choix de thème.
+
+Le décodeur, le filtrage, les journaux, l’historique et les réglages existants sont conservés. [Captures et qualification 0.1.15](docs/QUALIFICATION-0.1.15.md).
+
 ## Correctif 0.1.14 — nouveaux messages visibles
 
 Les deux tableaux reprennent toujours l’ordre d’arrivée au démarrage. Le tri d’une ancienne session ne peut plus ranger silencieusement les nouvelles réceptions par texte ou par heure. Le bouton flèche vers le bas « Derniers messages » restaure cet ordre et rejoint le bas du tableau ; la consultation manuelle reste possible. Voir [qualification 0.1.14](docs/QUALIFICATION-0.1.14.md).

@@ -12,7 +12,7 @@
 class MessageModel:public QSqlQueryModel {
 public:
  explicit MessageModel(int windowRows=1000000):windowRows_(qMax(256,windowRows)){}
- QHash<QString,QColor> colors;std::function<void(QString)> problem;
+ bool glacier=true;int pixelSize=15;QHash<QString,QColor> colors;std::function<void(QString)> problem;
  int rowCount(const QModelIndex& parent={})const override{return parent.isValid()?0:total_;}
  int columnCount(const QModelIndex& parent={})const override{return parent.isValid()?0:headers_.size();}
  QModelIndex index(int row,int column,const QModelIndex& parent={})const override{return !parent.isValid()&&row>=0&&row<total_&&column>=0&&column<headers_.size()?createIndex(row,column):QModelIndex{};}
@@ -21,7 +21,8 @@ public:
  void fetchMore(const QModelIndex& ={})override{}
  QVariant headerData(int section,Qt::Orientation orientation,int role=Qt::DisplayRole)const override{if(role==Qt::DisplayRole&&orientation==Qt::Horizontal)return headers_.value(section);return {};}
  QVariant data(const QModelIndex& idx,int role=Qt::DisplayRole)const override{
-  if(!idx.isValid())return {};if(role==Qt::FontRole&&idx.column()==0){QFont font("Consolas",10);font.setBold(true);return font;}
+  if(!idx.isValid())return {};if(role==Qt::FontRole&&idx.column()==0){QFont font(glacier?"Segoe UI":"Consolas");font.setPixelSize(pixelSize);font.setBold(true);return font;}
+  if(role==Qt::ForegroundRole&&glacier){return QColor(idx.column()==0?"#075B91":idx.column()==1||idx.column()==2?"#354D82":"#172C3E");}
   if(role==Qt::ForegroundRole){if(idx.column()==1||idx.column()==2||(headers_.size()==8&&idx.column()==6))return QColor("#c48aff");if(idx.column()==3||idx.column()==5)return QColor("#ffe56b");if(idx.column()==0||(headers_.size()==8&&idx.column()==6)){auto color=colors.value(data(index(idx.row(),0),Qt::DisplayRole).toString());if(color.isValid())return color;}return QColor("#42e6ff");}
   if(role!=Qt::DisplayRole&&role!=Qt::ToolTipRole&&role!=Qt::UserRole)return {};int page=idx.row()/PageSize;if(!pages_.contains(page)&&!load(page))return {};auto row=pages_.value(page).value(idx.row()%PageSize);return role==Qt::UserRole?row.value(headers_.size()):row.value(idx.column());
  }

@@ -1,0 +1,13 @@
+{
+  "source": "native Qt Windows capture",
+  "synthetic_data": true,
+  "pixels": 1440000,
+  "palette_pixels": {
+    "#F0F4F8": 134528,
+    "#F8FBFF": 131426,
+    "#FFFFFF": 358277,
+    "#E8F2FC": 364495,
+    "#DCEAF7": 119539,
+    "#24649A": 100083
+  }
+}

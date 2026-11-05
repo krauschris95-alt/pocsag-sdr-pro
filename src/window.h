@@ -50,6 +50,7 @@ private:
  QAction *allowAlpha_=nullptr,*allowNumeric_=nullptr,*allowTone_=nullptr,*allowDiagnostic_=nullptr;
  QComboBox *format_=nullptr,*step_=nullptr;
  QCheckBox *daily_=nullptr;QLineEdit *root_=nullptr,*profileName_=nullptr;QLabel* activePath_=nullptr;
+ bool glacier_=true;int textSize_=1;QLabel *frequencyMeta_=nullptr,*presentationState_=nullptr;void resizeEvent(QResizeEvent* event)override;void adaptPresentation();void setupPresentation();void applyPresentation();void updatePresentationState();
  void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
  void capcodes();void journal();void configureJournals(bool focusPermanent);void txtProfiles();void storageOptions();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
  void flushJournal();

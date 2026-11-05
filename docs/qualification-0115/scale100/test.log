@@ -1,0 +1,12 @@
+window=1366x768 tables=313,197 frequency=1,210,1091
+window=1600x900 tables=392,250 frequency=1,210,1325
+window=1920x1061 tables=489,314 frequency=1,210,1645
+window=1924x1061 tables=489,314 frequency=1,210,1649
+font=0 size=0 row=24
+font=1 size=1 row=29
+font=2 size=2 row=34
+PASS palettes, four client sizes, fonts, aliases, dialogs, persisted theme and SQLite preservation
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
