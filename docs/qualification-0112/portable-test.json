@@ -1,0 +1,7 @@
+{
+  "path": "Windows system only",
+  "zip_sha256": "874747D2D961B35CF553A9A5F56F27EDCF68A407382780432F4A58AFD22BDEA4",
+  "zip_crc": true,
+  "isolated_data": true,
+  "launch_exit": 0
+}

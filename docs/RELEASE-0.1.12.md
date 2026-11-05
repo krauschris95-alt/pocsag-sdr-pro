@@ -9,3 +9,5 @@ Dix suites CTest réussies. Réception RTL pendant cinq minutes : 109 messages d
 Voir docs/QUALIFICATION-0.1.12.md et les preuves jointes pour les tests, l'essai prolongé et les limites. Anciennes préférences conservées : sélectionner AUTO explicitement pour remplacer une ancienne politique ALPHA. Pour un capcode dont le format est connu, sélectionner ALPHA ou NUMERIC dans ses paramètres avancés.
 
 ZIP portable et installateur Windows x64 compilés localement. Source disponible au tag. Aucun texte radio privé, IQ ou audio utilisateur publié. Aucun serveur officiel PrivateRadio contacté.
+
+Contrôles de livraison : ZIP extrait et démarré sans Qt de développement ; installation vérifiée sur 190 fichiers puis désinstallation avec conservation du journal témoin. GitHub Actions est bloqué avant compilation par le budget du compte (run 42076726339), aucun artefact Actions.

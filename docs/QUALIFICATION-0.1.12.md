@@ -39,3 +39,16 @@ Le format applicatif des données belges compactes reste inconnu. AUTO préfère
 Voix SAPI, WAV/JSON et relais préparé conservés. Aucun raccordement au serveur officiel PrivateRadio, aucune nouvelle API officielle inventée. Pas de qualification exhaustive sur tous les émetteurs, matériels ou Windows 10. Exécutables non signés.
 
 Compilation locale Windows x64 ; l'état GitHub Actions sera rapporté séparément, sans assimiler un paquet local à un artefact Actions.
+
+## Validation des livrables
+
+Code applicatif compilé : 9c6a1a3862b54e6f85f5835a0576f9ae137b0f01. Le tag final ajoute ce compte rendu et les preuves de distribution ; aucun changement applicatif après compilation. Les documents inclus dans les binaires ont été figés avant ces contrôles finaux.
+
+ZIP : contrôle CRC intégral, extraction neuve, lancement avec PATH limité à Windows, code 0, données temporaires. Installateur : installation neuve isolée, 190 fichiers tous vérifiés SHA-256 contre le répertoire de préparation, lancement sous PATH Windows seul, code 0 ; désinstallation code 0, application retirée et journal témoin conservé. Aucune installation utilisateur préexistante remplacée. Voir portable-test.json et installer-test.json.
+
+SHA-256 ZIP : 874747d2d961b35cf553a9a5f56f27edcf68a407382780432f4a58afd22bdea4.
+SHA-256 installateur : bee0462e8f761aafd8dd4d44b20f2fa5fb6f48692667f5698c6eb3c6839da059.
+
+GitHub Actions : run 42076726339 du commit applicatif, échec avant démarrage : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions. Les exécutables publiés sont ceux compilés et qualifiés localement ; aucun réglage de facturation modifié.
+
+L'espace disque de travail étant faible, retrait de caches/outils optionnels régénérables (documentation Qt/CMake, frontal Fortran, outils de diagnostic LTO, Python optionnel du débogueur, archive de téléchargement HackRF), en conservant compilateur C++, Qt d'exécution, sources/licences de distribution et IQ privés. Aucune base ni journal utilisateur nettoyé.
