@@ -14,7 +14,7 @@ Copy-Item (Join-Path $cache 'rtl/x64/rtlsdr.dll'),(Join-Path $cache 'rtl/x64/pth
 New-Item -ItemType Directory -Force (Join-Path $Destination 'sources') | Out-Null
 Copy-Item $source (Join-Path $Destination 'sources/rtl-sdr-blog-V1.4.0.zip')
 Copy-Item README.md,LICENSE,docs/VALIDATION.md,docs/THIRD_PARTY.md $Destination
-Copy-Item docs/RELEASE-0.1.4.md,docs/reference-validation-30s.json,docs/reference-validation-60s.json $Destination
+Copy-Item docs/RELEASE-0.1.5.md,docs/reference-validation-30s.json,docs/reference-validation-60s.json $Destination
 Copy-Item licenses $Destination -Recurse -Force
 # The temporary download cache is left for the OS to clean up; no recursive deletion.
 Copy-Item docs/speech-validation-0.1.3.json,docs/radio-validation-0.1.3.json $Destination

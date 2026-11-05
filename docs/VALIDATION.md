@@ -1,3 +1,21 @@
+# Validation 0.1.5 — Save capcodes et état SDR
+
+## Plantage reproduit puis corrigé
+
+Le scénario automatisé ouvre Capcodes, clique Ajouter, puis Save. Avant correction : `voiceCell=0x0`, sortie `-1073741819` (`0xC0000005`). Le tableau possède 15 colonnes mais append() n'initialise pas la cellule 14 ; rowValues() la déréférence sans contrôle. La correction initialise Voix dans tous les chemins d'ajout/chargement/import, vérifie les cellules et intercepte les erreurs de sauvegarde/export.
+
+Windows x64 Release : six suites CTest réussies, zéro échec, 14,83 secondes. Nouvelle suite capcode_save_regression : ajout/Save, alias, affichage et voix, fichier existant préservé, nouveau fichier, création de dossier imbriqué, chemin bloqué par un fichier parent, fichier verrouillé Windows, capcode vide/invalide/hors plage/négatif, doublon, cellule volontairement absente, plusieurs capcodes, restauration après réouverture. Erreur SQL injectée par trigger : transaction annulée et ancienne configuration conservée. Sauvegarde JSON atomique de l'état précédent vérifiée. Les erreurs laissent le dialogue ouvert et la saisie intacte.
+
+Le test de flux utilise une DLL strictement réservée aux tests : vert avec IQ constants sans aucun message POCSAG ; rouge après interruption des callbacks, vert à leur reprise, rouge après arrêt. La DLL de test n'est pas distribuée. Les suites existantes continuent de vérifier les trois débits, références indépendantes, routage TXT, absence de doublons, voix et disposition.
+
+## RTL-SDR réel et Save simultané
+
+Test Windows natif de 60 secondes à 169626000 Hz, 240000 éch/s : voyant vert observé, Save après trois secondes pendant que le thread SDR continue, cinq textes réellement reçus et écrits en TXT, voyant rouge à l'arrêt ; code de sortie 0. Aucun texte ou IQ privé publié, uniquement les compteurs dans qualification-015/hardware-save-after.log. Le fichier TXT général est lu pour vérifier l'écriture. Le routage dédié et son absence de doublon sont vérifiés avec un message de test contrôlé ; aucun message réel destiné au capcode de test n'est présumé reçu.
+
+SAPI Windows natif : voix française Hortense sélectionnée, lecture terminée sans erreur, rapport qualification-015/speech-after.json. Capture interface-0.1.5.png : disposition 0.1.4 conservée, voyant SDR INACTIF rouge au repos. Les nouveaux logs exceptions.log sont locaux ; le filtre fatal Windows est une aide de diagnostic au mieux, pas une garantie de récupération d'une faute mémoire quelconque.
+
+Limites : pas de test de débranchement physique USB, de HackRF réel ou d'endurance H24 ; fichier verrouillé et parent inaccessible testés, pas de matrice exhaustive des ACL NTFS ou de pannes réseau/électriques. Les dialogues utilisent le sélecteur Qt/Windows ; les tests de chemins portent sur les champs du dialogue et la sauvegarde, pas sur tous les scénarios du sélecteur natif.
+
 # Validation 0.1.4 — correction prioritaire de disposition
 
 ## Agencement comparé à la maquette PDW

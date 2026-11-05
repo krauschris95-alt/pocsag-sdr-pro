@@ -17,7 +17,8 @@ public:
  std::atomic_bool stopping{false};
  static QStringList devices();
  static QVector<RadioDevice> deviceInfos();
- void start(Priority priority=InheritPriority){stopping=false;QThread::start(priority);}
+ void start(Priority priority=InheritPriority){stopping=false;lastLiveIq_=0;QThread::start(priority);}
+ bool hasLiveIq()const;
  void stop();
  ~Receiver(){stop();}
 signals:
@@ -30,5 +31,6 @@ signals:
 protected:
  void run() override;
 private:
+ std::atomic<long long> lastLiveIq_{0};
  QMutex deviceMutex_;void* activeDevice_=nullptr;int(*cancelAsync_)(void*)=nullptr;
 };

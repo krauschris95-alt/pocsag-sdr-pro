@@ -23,14 +23,15 @@ QVector<RadioDevice> Receiver::deviceInfos(){
  QLibrary hack("libhackrf");if(hack.load())try{auto init=sym<int(*)()>(hack,"hackrf_init");auto exit=sym<int(*)()>(hack,"hackrf_exit");if(init()==0){auto list=sym<HackList*(*)()>(hack,"hackrf_device_list");auto free=sym<void(*)(HackList*)>(hack,"hackrf_device_list_free");auto devices=list();if(devices){for(int i=0;i<devices->count;++i){QString serial=QString::fromUtf8(devices->serials[i]?devices->serials[i]:"");if(!serial.isEmpty())result.push_back({"HackRF One — "+serial,"hackrf:"+serial});}free(devices);}exit();}}catch(...){}return result;
 }
 QStringList Receiver::devices(){QStringList names;for(auto d:deviceInfos())names<<d.name;return names;}
-void Receiver::stop(){stopping=true;{QMutexLocker lock(&deviceMutex_);if(activeDevice_&&cancelAsync_)cancelAsync_(activeDevice_);}wait();}
+bool Receiver::hasLiveIq()const{auto last=lastLiveIq_.load();return isRunning()&&!stopping&&last>0&&nowMs()-last<1500;}
+void Receiver::stop(){stopping=true;lastLiveIq_=0;{QMutexLocker lock(&deviceMutex_);if(activeDevice_&&cancelAsync_)cancelAsync_(activeDevice_);}wait();}
 void Receiver::run(){
  QFile capture(config.capture);if(!config.capture.isEmpty()&&!capture.open(QIODevice::WriteOnly|QIODevice::NewOnly)){emit problem("Capture IQ privée : "+capture.errorString());return;}
  bool offline=!config.file.isEmpty();int retries=0;
  do {
   QString identity=config.deviceKey.isEmpty()?QString("RTL-SDR index %1").arg(config.index):config.deviceKey;
   pocsag::Demodulator dsp([&](pocsag::Message m){emit frame(m,config.frequency,identity,QDateTime::currentDateTimeUtc());emit decoded(m.ric,m.function,m.baud,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,config.frequency,identity);},config.baud,config.rate,config.channelBandwidth);
-  int spectrumFrame=0;Consumer consume=[&](const QByteArray& b){if(capture.isOpen()&&capture.write(b)!=b.size()){stopping=true;emit problem("Erreur capture IQ");return;}double power=0;for(int i=0;i+1<b.size();i+=2){double re=(uchar(b[i])-127.5)/128,im=(uchar(b[i+1])-127.5)/128;power+=re*re+im*im;}double db=10*std::log10(qMax(1e-12,power/qMax(1,b.size()/2)));if(config.squelch>-160&&db<config.squelch)dsp.reset();else dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));if((spectrumFrame++%8)==0)emit samples(b);};
+  int spectrumFrame=0;Consumer consume=[&](const QByteArray& b){if(!offline&&!b.isEmpty())lastLiveIq_=nowMs();if(capture.isOpen()&&capture.write(b)!=b.size()){stopping=true;emit problem("Erreur capture IQ");return;}double power=0;for(int i=0;i+1<b.size();i+=2){double re=(uchar(b[i])-127.5)/128,im=(uchar(b[i+1])-127.5)/128;power+=re*re+im*im;}double db=10*std::log10(qMax(1e-12,power/qMax(1,b.size()/2)));if(config.squelch>-160&&db<config.squelch)dsp.reset();else dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));if((spectrumFrame++%8)==0)emit samples(b);};
   if(offline){QFile file(config.file);if(!file.open(QIODevice::ReadOnly)){emit problem(file.errorString());return;}emit tuned(config.frequency,config.rate,config.bandwidth,config.file);emit state("Lecture IQ hors ligne");while(!stopping&&!file.atEnd()){auto b=file.read(16384);if(b.size()%2){emit problem("IQ tronqué");return;}consume(b);msleep(5);}dsp.finish();emit state("Lecture IQ terminée");return;}
   void* device=nullptr;int(*closeDevice)(void*)=nullptr;int(*exitHack)()=nullptr;int(*stopHack)(void*)=nullptr;QLibrary library(config.deviceKey.startsWith("hackrf:")?"libhackrf":qEnvironmentVariable("POCSAG_TEST_RTL_LIBRARY","rtlsdr"));
   try {
@@ -49,8 +50,8 @@ void Receiver::run(){
     emit tuned(config.frequency,config.rate,config.channelBandwidth,identity);emit state(retries?"RTL-SDR reconnecté — réception reprise":"Réception RTL-SDR en cours");auto readAsync=sym<int(*)(void*,void(*)(unsigned char*,uint32_t,void*),void*,uint32_t,uint32_t)>(library,"rtlsdr_read_async");std::atomic_bool finished=false,stalled=false;std::thread watchdog([&]{while(!finished){if(stopping||nowMs()-context.last>3000){if(!stopping)stalled=true;cancel(device);}std::this_thread::sleep_for(std::chrono::milliseconds(100));}});
     int result=readAsync(device,rtlCallback,&context,0,16384);finished=true;watchdog.join();{QMutexLocker lock(&deviceMutex_);activeDevice_=nullptr;cancelAsync_=nullptr;}if(!stopping){if(stalled)throw std::runtime_error("RTL-SDR : aucun échantillon depuis 3 secondes");check(result,"Lecture USB asynchrone");throw std::runtime_error("Flux RTL interrompu");}
    }
-  }catch(const std::exception& error){if(!stopping)emit problem(QString::fromUtf8(error.what()));}
+  }catch(const std::exception& error){lastLiveIq_=0;if(!stopping)emit problem(QString::fromUtf8(error.what()));}
   {QMutexLocker lock(&deviceMutex_);activeDevice_=nullptr;cancelAsync_=nullptr;}if(device&&stopHack)stopHack(device);if(device&&closeDevice)closeDevice(device);if(exitHack)exitHack();dsp.finish();
-  if(stopping||!config.reconnect)break;++retries;emit state("Reconnexion SDR dans 3 secondes…");for(int i=0;i<30&&!stopping;++i)msleep(100);
+  lastLiveIq_=0;if(stopping||!config.reconnect)break;++retries;emit state("Reconnexion SDR dans 3 secondes…");for(int i=0;i<30&&!stopping;++i)msleep(100);
  }while(!stopping);
 }

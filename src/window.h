@@ -58,4 +58,5 @@ private:
  bool receiveWanted_=false;bool testStorage_=false;QTimer* refreshTimer_=nullptr;
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
  void reloadDevices();void storePreferences();QStringList disabledTypes()const;
+ QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();
 };

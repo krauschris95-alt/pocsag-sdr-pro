@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.4
+# POCSAG SDR Pro — 0.1.5
 
 Application Windows x64 C++20 / Qt 6 / SQLite, réception RTL-SDR et backend HackRF intégrés, sans télémétrie ni transmission automatique des messages. Préversion en qualification, projet indépendant.
 
@@ -70,7 +70,7 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 
 GitHub Actions utilise MinGW x64 et inclut ses DLL pour un ZIP portable. Les tags `v*` publient une préversion après tests. Moteur seul : `-DBUILD_GUI=OFF`.
 
-Voir [validation](docs/VALIDATION.md), [notes 0.1.4](docs/RELEASE-0.1.4.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
+Voir [validation](docs/VALIDATION.md), [notes 0.1.5](docs/RELEASE-0.1.5.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
 
 Pour 0.1.2, le budget Actions bloque les jobs : le ZIP est construit et testé localement puis publié dans GitHub Releases. La CI devra être relancée après rétablissement du budget.
 
@@ -91,3 +91,10 @@ Cette préversion n'est pas qualifiée H24. La récupération après débranchem
 ## Disposition compacte 0.1.4
 
 Une barre de menus, une petite barre à icônes et la fréquence cyan à droite. Messages contient deux tableaux pleine largeur, avec partage initial 60/40 et séparateur horizontal mémorisé. Les réglages de réception sont dans Récepteur ; les dossiers, profils et interrupteurs TXT dans Enregistrements ; le pas dans Récepteur ; le zoom et les réglages du spectre dans Affichage. Les barres de recherche ne prennent plus de place : clic droit dans chaque tableau pour rechercher, copier, exporter ou relire. Double-clic pour consulter le message complet. Le spectre occupe exclusivement le second onglet.
+
+
+## Correctif urgent 0.1.5
+
+Save des capcodes initialise et vérifie la cellule Voix. Une transaction SQLite conserve ensemble adresse, alias, affichage, voix et destinations ; capcodes-backup.json sauvegarde atomiquement la configuration précédente. Les erreurs de validation ou de chemin conservent le dialogue ouvert et la saisie. Dossier dédié ou fichier TXT direct : champs modifiables, Parcourir et Ouvrir dossier ; les dossiers et fichiers absents sont créés sans effacer les TXT existants. Les réglages individuels prennent effet après Save.
+
+Le voyant supérieur SDR ACTIF vert dépend de l’arrivée récente des IQ matériels, pas du nombre de messages. Après 1,5 seconde sans IQ, à l’arrêt ou hors ligne, il est rouge SDR INACTIF. Les journaux techniques et exceptions sont locaux, à côté de la base et des préférences. La disposition 0.1.4 est conservée.

@@ -1,0 +1,17 @@
+[0/1] Re-running CMake...
+-- Could NOT find WrapVulkanHeaders (missing: Vulkan_INCLUDE_DIR) 
+-- Configuring done (0.8s)
+-- Generating done (0.4s)
+-- Build files have been written to: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+[1/15] Automatic MOC and UIC for target desktop_services
+[2/13] Automatic MOC and UIC for target capcode_regression_tests
+[3/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/capcode_regression_tests_autogen/mocs_compilation.cpp.obj
+[4/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/tests/capcode_regression_tests.cpp.obj
+[5/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/receiver.cpp.obj
+[6/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/window.cpp.obj
+[7/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/options.cpp.obj
+[8/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/configuration.cpp.obj
+[9/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/speechoptions.cpp.obj
+[10/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/desktoplayout.cpp.obj
+[11/13] Building CXX object CMakeFiles/capcode_regression_tests.dir/src/receiveroptions.cpp.obj
+[12/13] Linking CXX executable capcode_regression_tests.exe

@@ -1,0 +1,2 @@
+Hardware IQ green=1 save_running=1 real_texts=5 TXT=1 red_after_stop=1
+PASS capcode Save, validation, rollback, paths, backup and persistence

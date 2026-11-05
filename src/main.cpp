@@ -1,4 +1,5 @@
 #include "window.h"
+#include "errorlog.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QTimer>
@@ -8,7 +9,7 @@
 #include <QSettings>
 #include <QTemporaryDir>
 int main(int argc,char** argv){
- QApplication app(argc,argv);app.setOrganizationName("POCSAG-SDR-Pro");app.setApplicationName("POCSAG-SDR-Pro");auto args=app.arguments();
+ SafeApplication app(argc,argv);app.setOrganizationName("POCSAG-SDR-Pro");app.setApplicationName("POCSAG-SDR-Pro");installExceptionLog();auto args=app.arguments();
  int probe=args.indexOf("--probe-report");
  if(probe>=0&&probe+1<args.size()){
   Receiver receiver;int freqArg=args.indexOf("--frequency");if(freqArg>=0&&freqArg+1<args.size())receiver.config.frequency=quint32(args[freqArg+1].toDouble()*1e6);int seconds=5;int secArg=args.indexOf("--seconds");if(secArg>=0&&secArg+1<args.size())seconds=std::clamp(args[secArg+1].toInt(),1,60);QString error,state;quint64 bytes=0;int messages=0;auto devices=Receiver::devices();
