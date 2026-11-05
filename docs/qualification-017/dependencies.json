@@ -1,0 +1,12 @@
+{
+  "required_missing": [],
+  "optional_sql_plugins_not_used": {
+    "sqldrivers\\qsqlmimer.dll": [
+      "MIMAPI64.dll"
+    ],
+    "sqldrivers\\qsqlpsql.dll": [
+      "LIBPQ.dll"
+    ]
+  },
+  "sqlite_native_startup_verified": true
+}

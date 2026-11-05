@@ -1,0 +1,8 @@
+{
+  "installer_exit": 0,
+  "startup_exit": 0,
+  "uninstaller_exit": 0,
+  "path_only_windows": true,
+  "user_log_preserved": true,
+  "application_removed": true
+}

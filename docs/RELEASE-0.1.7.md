@@ -9,3 +9,9 @@
 Validation : **8 suites réussies (23,78 s)** ; **23 minutes de RF réel à 169,626 MHz**, dont 20 minutes avec les deux journaux. 460 messages SQLite/chaque tableau, 443 lignes générales et 452 permanentes, contenu exact. 10 verrous SQLite injectés, 315 reprises, aucune file restante à la fin. Ces totaux reflètent les différentes phases ON/OFF. Voir `docs/QUALIFICATION-0.1.7.md`.
 
 Préversion Windows x64, ZIP et installateur par utilisateur. Windows 10/AMD/autres matériels et H24 non qualifiés. Aucune transmission PrivateRadio ou cloud active.
+
+
+Compilation et validation locales Windows 11 Pro / Intel / Qt 6.8.3 / MinGW 13.1. GitHub Actions #23 n’a pas démarré, le budget du compte empêchant son exécution : aucun artefact CI disponible pour cette version.
+
+
+ZIP extrait et démarré sans PATH de développement. Installateur Windows testé : installation, lancement et désinstallation réussis, journal utilisateur conservé. Bases et TXT utilisateur non modifiés par les essais.

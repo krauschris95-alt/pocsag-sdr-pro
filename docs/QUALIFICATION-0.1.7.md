@@ -58,3 +58,17 @@ La conservation est limitée par les ressources physiques et les capacités de S
 Le ZIP candidat extrait démarre nativement avec PATH limité à Windows, code 0 (`portable-test.json`). Aucun dossier Qt/MinGW du poste de développement n’est utilisé par ce démarrage. Captures natives de l’interface et des deux journaux : `qualification-017/captures/`, uniquement données fabriquées et identifiées comme tests. Le test natif vérifie séparément le suivi depuis le bas et la consultation manuelle dans les deux tableaux.
 
 L’installateur et les empreintes des livrables finaux sont contrôlés après la fin de l’essai prolongé ; les résultats sont conservés avec les autres preuves de cette qualification. Les versions Windows/CPU et les matériels non disponibles restent non qualifiés. Vingt minutes avec les deux fichiers ne constituent pas une preuve H24.
+
+
+## GitHub Actions et provenance
+
+Le [run #23](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/41989204208), commit `a600fbd0a43e9b600f7ca504f46a1506babd7e39`, est bloqué **avant démarrage** : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions ni succès CI revendiqué. Les paquets sont compilés et contrôlés localement sur le poste Windows décrit. Le workflow actualisé demeure disponible pour une exécution lorsque le budget sera rétabli ; aucun réglage de facturation modifié.
+
+
+## Contrôle final de l’installateur et du ZIP
+
+**Réussi sur Windows 11 Pro x64** : installation silencieuse dans un dossier de test du projet, lancement natif avec PATH limité à Windows (code 0), désinstallation (code 0), application retirée et journal utilisateur ajouté dans le dossier d’installation conservé. Aucune installation utilisateur préexistante remplacée. Rapport `qualification-017/installer-test.json`, capture de démarrage isolée `installed.png`.
+
+Le ZIP final a passé son contrôle d’intégrité ; l’exécutable qu’il contient a la même empreinte que le binaire vérifié au démarrage autonome et l’application liée à l’implémentation de l’essai prolongé. Aucun fichier de base utilisateur, préférence, capture IQ, vidéo privée ou DLL de simulation n’est inclus. Empreintes dans `qualification-017/packages-sha256.json`.
+
+L’audit des imports ne trouve aucune dépendance requise manquante. Les plugins optionnels Qt PostgreSQL/Mimer présents ont leurs dépendances externes non fournies ; ils ne sont pas utilisés par l’application, qui emploie SQLite. Voir `dependencies.json`. Les documents embarqués ont été copiés lors de l’assemblage ; ce complément de contrôle final et ses JSON sont disponibles dans le dépôt et la Release.
