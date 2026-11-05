@@ -1,0 +1,8 @@
+{
+  "version": "0.1.6",
+  "startup_exit": 0,
+  "path_only_windows": true,
+  "capture_exists": true,
+  "configuration_isolated_by_screenshot_option": true,
+  "private_data_packaged": false
+}

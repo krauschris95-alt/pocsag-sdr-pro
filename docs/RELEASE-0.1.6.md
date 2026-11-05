@@ -11,4 +11,4 @@ PrivateRadio : préférences et contrat hors ligne seulement, aucun transfert ac
 
 Qualification détaillée : docs/QUALIFICATION-0.1.6.md. Windows 10/AMD/autres SDR et H24 non qualifiés. La clé RTL présente reste inaccessible pendant cette session (erreur USB -3) : aucune nouvelle réception matérielle réussie annoncée. Les essais réels antérieurs 0.1.5 sont conservés et distingués des tests de cette version.
 
-Paquets compilés localement sur Windows 11 Pro / Intel / Qt 6.8.3 / MinGW 13.1. L’état du job GitHub Actions est documenté séparément ; ne pas assimiler la présence d’un workflow à une compilation CI réussie.
+Paquets compilés localement sur Windows 11 Pro / Intel / Qt 6.8.3 / MinGW 13.1. Le run Actions #19 est bloqué avant démarrage par le budget du compte : aucun artefact Actions disponible pour cette version. ZIP et installateur construits localement ; tests et provenances dans le rapport.

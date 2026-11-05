@@ -1,0 +1,16 @@
+{
+  "unresolved_imports": {
+    "sqldrivers\\qsqlmimer.dll": [
+      "MIMAPI64.dll"
+    ],
+    "sqldrivers\\qsqlpsql.dll": [
+      "LIBPQ.dll"
+    ]
+  },
+  "optional_plugins_not_used_by_application": [
+    "qsqlmimer.dll (MIMAPI64.dll)",
+    "qsqlpsql.dll (LIBPQ.dll)"
+  ],
+  "required_application_imports_missing": [],
+  "sqlite_verified_by_native_startup": true
+}

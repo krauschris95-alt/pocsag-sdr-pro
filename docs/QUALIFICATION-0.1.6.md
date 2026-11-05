@@ -63,3 +63,17 @@ Limites : maximum fréquence 4294,967295 MHz (stockage 32 bits), Soapy CF32 réd
 Pas de qualification Windows 10, AMD, Famille/Entreprise/Éducation, anciens PC, multiples résolutions physiques, très longs historiques, H24, coupure secteur ou disque plein. Le diagnostic CPU ne prétend pas qu’AVX matériel est utilisable par l’OS ; traitement portable sans AVX obligatoire.
 
 PrivateRadio : préférences persistées, contrat JSON et règle d’éligibilité unitairement testés. Aucun transport réel, authentification, serveur, reconnexion, file distante, canal vocal distant ni transmission cloud. L’interrupteur général est explicitement une intention préparatoire. L’activation reste une phase ultérieure distincte, après validation autonome.
+
+
+## Provenance CI
+
+Le [run #19](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/41950968610), commit `9990e6fe84d60b8c145149cbb9baaa39c53effb2`, a échoué **avant démarrage** : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions de cette version, aucune compilation CI réussie revendiquée. Les livrables Release sont construits et contrôlés localement. Le workflow contient aussi la compilation Soapy/RTL et la génération de l’installateur pour une future exécution quand le budget sera rétabli. Aucun changement de facturation réalisé.
+
+
+## Contrôle des paquets finaux
+
+ZIP : intégrité ZIP contrôlée, extraction, puis démarrage natif avec PATH limité à Windows (aucun dossier Qt/MinGW de développement), sortie 0. Installateur final : même PATH limité, installation/démarrage/désinstallation sorties 0, journal utilisateur conservé. Voir `portable-test.json`, `installer-final-test.json` et `packages-sha256.json`. Les noms/chemins absolus des artefacts locaux sont des informations de construction, sans messages radio.
+
+Un premier rejeu de l’installation finale a échoué pendant la forte occupation disque par les deux extractions de test ; après retrait des seules extractions générées, le même installateur a réussi. Cet incident ne constitue pas une validation de reprise après disque plein en réception. Les captures/IQ/configurations utilisateur n’ont pas été supprimées.
+
+L’audit PE trouve uniquement deux dépendances optionnelles non fournies sur les plugins Qt PostgreSQL/Mimer (`LIBPQ.dll`, `MIMAPI64.dll`) : ces pilotes ne sont pas utilisés par l’application, qui utilise exclusivement SQLite. Le démarrage et les tests SQLite réussissent sans eux ; voir `dependencies.json`. Aucun service PostgreSQL/Mimer n’est requis.
