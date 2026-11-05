@@ -1,0 +1,10 @@
+{
+  "uninstall_exit": 0,
+  "setup_sha256": "EF3F29837BD6E73A9775FA8DDF8A406B1293DA5594B3FA5E829F10DCA85C9E7E",
+  "install_exit": 0,
+  "path": "Windows system only",
+  "app_removed": true,
+  "user_file_preserved": true,
+  "launch_exit": 0,
+  "destination": "fresh isolated workspace directory"
+}

@@ -1,0 +1,6 @@
+{
+  "path": "Windows system only",
+  "launch_exit": 0,
+  "zip_integrity": true,
+  "isolated_data": true
+}

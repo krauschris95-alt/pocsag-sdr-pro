@@ -1,0 +1,8 @@
+{
+  "code_commit": "8c4367bf5a40ad86771bedd8db573421eb2b6990",
+  "application_sha256": "e2042450cb5867140b84c9d310a5f50a9f8bab1c102ec18dae755fc8e085e64a",
+  "version": "0.1.10",
+  "compiler": "MinGW 13.1",
+  "qt": "6.8.3",
+  "platform": "Windows x64"
+}

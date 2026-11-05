@@ -1,0 +1,23 @@
+Test project C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+    Start 1: decoder
+1/9 Test #1: decoder ..........................   Passed    0.17 sec
+    Start 2: integration
+2/9 Test #2: integration ......................   Passed    5.39 sec
+    Start 3: independent_reference
+3/9 Test #3: independent_reference ............   Passed    0.13 sec
+    Start 4: speech_queue
+4/9 Test #4: speech_queue .....................   Passed    0.04 sec
+    Start 5: receiver_reconnect_injected
+5/9 Test #5: receiver_reconnect_injected ......   Passed    8.88 sec
+    Start 6: capcode_save_regression
+6/9 Test #6: capcode_save_regression ..........   Passed    2.44 sec
+    Start 7: sqlite_storage_regression
+7/9 Test #7: sqlite_storage_regression ........   Passed    9.58 sec
+    Start 8: sqlite_snapshot_reproduction
+8/9 Test #8: sqlite_snapshot_reproduction .....   Passed    0.08 sec
+    Start 9: global_corrections
+9/9 Test #9: global_corrections ...............   Passed   18.98 sec
+
+100% tests passed out of 9
+
+Total Test time (real) =  45.71 sec
