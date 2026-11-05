@@ -2,7 +2,7 @@
 import pathlib,sys,subprocess
 root=pathlib.Path(__file__).resolve().parent.parent
 package=root/'dist/POCSAG-SDR-Pro'
-version=sys.argv[2] if len(sys.argv)>2 else '0.1.11'
+version=sys.argv[2] if len(sys.argv)>2 else '0.1.12'
 compiler=pathlib.Path(sys.argv[1]).resolve()
 script=root/'dist/installer.nsi'
 def quote(text):

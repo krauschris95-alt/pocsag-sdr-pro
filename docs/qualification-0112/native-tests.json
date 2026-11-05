@@ -1,0 +1,10 @@
+{
+  "platform": "Windows x64",
+  "integration_exit": 0,
+  "pager_contract_exit": 0,
+  "native_ui_captures": true,
+  "data": "isolated synthetic fixtures",
+  "ctest_total": 10,
+  "ctest_passed": 10,
+  "ctest_seconds": 64.17
+}

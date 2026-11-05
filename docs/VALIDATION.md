@@ -139,3 +139,8 @@ Les rapports ne contiennent que compteurs et empreintes. Captures, adresses et t
 - Pas de HackRF, multicanal, reconnexion USB automatique ou démarrage Windows automatique. Rafraîchissement des grands historiques à optimiser.
 - Sauvegarde/restauration par interface, sélection à la souris et déplacement dans le spectre restent hors de cette version. Aucun SNR artificiel.
 
+
+
+## Version 0.1.12
+
+Voir [qualification numérique et non-régression](QUALIFICATION-0.1.12.md). Les données brutes et candidats sont désormais conservés ; les ambiguïtés et préfixes incomplets ne déclenchent pas de voix automatique. Les comparaisons radio n’identifient pas le format applicatif de l’émetteur.

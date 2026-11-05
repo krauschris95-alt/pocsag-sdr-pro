@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.11
+# POCSAG SDR Pro — 0.1.12
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -7,6 +7,18 @@ Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulatio
 Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
+
+## Interprétation ALPHA / NUMERIC — 0.1.12
+
+Récepteur → Interprétation des données définit la politique réseau. Capcodes → Paramètres avancés permet **AUTO / ALPHA / NUMERIC / TONE**, indépendamment pour chaque capcode ; INHERIT conserve la politique réseau. Les choix sont mémorisés. Le défaut d'une nouvelle configuration est AUTO ; les anciens choix ALPHA/NUMERIC restent conservés.
+
+**AUTO ne prétend pas reconnaître le format applicatif.** Chaque groupe de quatre bits possède une représentation numérique, y compris des données binaires. Sans règle réseau ou capcode explicite, un message avec charge utile est AMBIGUOUS : les deux candidats restent accessibles, aucune voix ni annonce WAV automatique. Pour un émetteur dont le format est connu, choisir ALPHA ou NUMERIC explicitement. Les bits de fonction 0–3 ne sont pas utilisés comme preuve de type. Les capcodes existants et leurs interrupteurs ne sont pas réécrits.
+
+NUMERIC prend en charge les chiffres et `. U espace - ] [` à 512/1200/2400 bauds. Le remplissage numérique final par espaces est retiré ; le protocole ne permet pas de distinguer un espace final intentionnel du remplissage. Les bits bruts restent disponibles. Les chiffres sont prononcés séparément, tandis que les TXT et le champ texte Pager conservent le contenu décodé exact.
+
+Double-cliquer sur un message ouvre son texte complet, les candidats ALPHA/NUMERIC, la politique appliquée, les bits utiles corrigés, les mots radio avant correction, la fonction et le diagnostic. Une perte de synchronisation, un mot non corrigeable ou une fin de flux conserve le préfixe reçu comme INCOMPLETE, sans voix/WAV automatique. Les données non textuelles ne sont plus supprimées à l'ingestion par le filtre Diagnostics. Les anciens enregistrements n'avaient pas ces données brutes : elles ne peuvent pas être reconstituées.
+
+Validation : six vecteurs IQ externes ALPHA/NUMERIC concordent avec multimon-ng, tous les débits et symboles numériques étendus. Une capture RTL réelle de 60 secondes donne 49 correspondances exactes dans chaque interprétation ; une trame supplémentaire reste non corroborée. Cela ne prouve pas qu'un émetteur réel utilise NUMERIC ni que les données compactes sont chiffrées. Voir le [rapport et les limites 0.1.12](docs/QUALIFICATION-0.1.12.md).
 
 ## Voix automatique et audio PrivateRadio — 0.1.11
 

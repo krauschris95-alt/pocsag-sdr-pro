@@ -1,0 +1,51 @@
+Test project C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+      Start  1: decoder
+ 1/10 Test  #1: decoder ..........................   Passed    0.30 sec
+      Start  2: integration
+ 2/10 Test  #2: integration ......................***Failed    0.20 sec
+unable to open database file Error opening database
+
+      Start  3: independent_reference
+ 3/10 Test  #3: independent_reference ............   Passed    0.18 sec
+      Start  4: speech_queue
+ 4/10 Test  #4: speech_queue .....................   Passed    0.06 sec
+      Start  5: receiver_reconnect_injected
+ 5/10 Test  #5: receiver_reconnect_injected ......***Failed    0.09 sec
+
+      Start  6: capcode_save_regression
+ 6/10 Test  #6: capcode_save_regression ..........***Failed    0.19 sec
+unable to open database file Error opening database
+
+      Start  7: sqlite_storage_regression
+ 7/10 Test  #7: sqlite_storage_regression ........***Failed    0.22 sec
+unable to open database file Error opening database
+
+      Start  8: sqlite_snapshot_reproduction
+ 8/10 Test  #8: sqlite_snapshot_reproduction .....***Failed    0.07 sec
+Rows fetched in persistent cursor: 0
+TXT writer=0 receiving insert=0 error= native=
+After cursor released: 0
+
+      Start  9: global_corrections
+ 9/10 Test  #9: global_corrections ...............***Failed    0.20 sec
+global check line 20
+
+      Start 10: pager_audio_contract
+10/10 Test #10: pager_audio_contract .............***Failed    0.23 sec
+routes
+unable to open database file Error opening database
+
+
+30% tests passed, 7 tests failed out of 10
+
+Total Test time (real) =   1.79 sec
+
+The following tests FAILED:
+	  2 - integration (Failed)
+	  5 - receiver_reconnect_injected (Failed)
+	  6 - capcode_save_regression (Failed)
+	  7 - sqlite_storage_regression (Failed)
+	  8 - sqlite_snapshot_reproduction (Failed)
+	  9 - global_corrections (Failed)
+	 10 - pager_audio_contract (Failed)
+Errors while running CTest

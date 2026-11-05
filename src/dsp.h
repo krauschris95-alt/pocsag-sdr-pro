@@ -19,7 +19,7 @@ public:
   }
  }
  Decoder::Statistics statistics()const{Decoder::Statistics total;for(auto& d:decoders_){auto& s=d->statistics();total.preambles+=s.preambles;total.syncs+=s.syncs;total.words+=s.words;total.rejected+=s.rejected;total.correctedBits+=s.correctedBits;}return total;}
- void finish(){for(auto& d:decoders_)d->discard();}
+ void finish(){for(auto& d:decoders_)d->interrupt("IQ stream ended before message boundary");}
  void reset(){for(auto& d:decoders_)d->reset();clocks_={};history_={};cursor_=decimation_=0;previous_={1,0};dc_=0;}
 private:
  struct Clock{double phase=0,sum=0,filtered=0;bool previous=false;};std::array<Clock,3>clocks_{};
