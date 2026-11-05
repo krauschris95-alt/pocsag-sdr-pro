@@ -1,6 +1,9 @@
 """Bundle the pinned MSYS2 MinGW libraries and their corresponding upstream sources."""
 import hashlib,io,pathlib,tarfile,urllib.request,sys
-from backports import zstd
+try:
+    from compression import zstd  # Python 3.14+ standard library
+except ImportError:
+    from backports import zstd  # Compatibility with older local build runtimes
 destination=pathlib.Path(sys.argv[1]);cache=pathlib.Path(sys.argv[2]);cache.mkdir(parents=True,exist_ok=True)
 packages=[('hackrf','mingw-w64-x86_64-hackrf-2026.01.2-1-any.pkg.tar.zst','53980aeb68b15e979d12685b831eacc440e5f8c15f55d9e883f9cef9de5593a7'),('libusb','mingw-w64-x86_64-libusb-1.0.30-1-any.pkg.tar.zst','124edc26b009678a4c5e759481a364abf63ed7f2f49a53092e8bd0a47c0c0740')]
 def download(url,path):

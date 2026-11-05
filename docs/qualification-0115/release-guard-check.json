@@ -1,0 +1,14 @@
+{
+  "existing": {
+    "exit_code": 0,
+    "output": "publish=false"
+  },
+  "new": {
+    "exit_code": 0,
+    "output": "publish=true"
+  },
+  "unavailable": {
+    "exit_code": 1,
+    "output": ""
+  }
+}

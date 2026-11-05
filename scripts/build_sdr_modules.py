@@ -1,6 +1,9 @@
 """Build pinned official SoapySDR and RTL module for the Windows package (build tools only)."""
 import argparse,pathlib,urllib.request,hashlib,zipfile,subprocess,shutil,io,tarfile
-from backports import zstd
+try:
+    from compression import zstd  # Python 3.14+ standard library
+except ImportError:
+    from backports import zstd  # Compatibility with older local build runtimes
 parser=argparse.ArgumentParser();parser.add_argument('--cache',default='build-sdr-deps');parser.add_argument('--destination',default='dist/POCSAG-SDR-Pro');parser.add_argument('--cmake',default='cmake');args=parser.parse_args()
 root=pathlib.Path(args.cache).resolve();root.mkdir(parents=True,exist_ok=True);destination=pathlib.Path(args.destination).resolve();destination.mkdir(parents=True,exist_ok=True)
 packages=[
