@@ -1,0 +1,11 @@
+routes
+Pager WAV prêt : événement=ba5a91cd-7643-46d7-a7dc-fdc7cdc51379
+Pager WAV prêt : événement=b6a52856-7c48-48a4-8385-890e98c91d65
+Pager WAV prêt : événement=f11a0102-e5b7-4f55-82b6-3864a0659693
+retry
+Pager différé : événement=cf2e3982-553f-4fa8-9f5a-378c67025e1d ; Dossier audio inaccessible
+Pager WAV prêt : événement=cf2e3982-553f-4fa8-9f5a-378c67025e1d
+Pager différé : événement=cf2e3982-553f-4fa8-9f5a-378c67025e1d ; Accusé serveur absent ou différent
+Pager accusé vérifié : événement=cf2e3982-553f-4fa8-9f5a-378c67025e1d
+PASS independent local/Pager flags, atomic WAV+JSON, retry/restart/ACK, expiry, privacy, TXT unchanged, audio reconnection injected
+Found Rafael Micro R828D tuner

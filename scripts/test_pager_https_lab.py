@@ -1,5 +1,5 @@
 """Isolated loopback TLS LAB; never connects to PrivateRadio."""
-import base64,datetime,http.server,ipaddress,json,pathlib,ssl,subprocess,sys,tempfile,threading
+import base64,io,wave,datetime,http.server,ipaddress,json,pathlib,ssl,subprocess,sys,tempfile,threading
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes,serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -25,6 +25,8 @@ def main():
                 event=payload["event"];audio=base64.b64decode(payload["audio_base64"],validate=True)
                 if "path" in event.get("audio",{}) or not audio.startswith(b"RIFF") or self.headers.get("Idempotency-Key")!=event["message_id"]:
                     stats["private_path_rejected"]+=1;self.send_response(400);self.end_headers();return
+                with wave.open(io.BytesIO(audio),"rb") as pcm:
+                    assert pcm.getnchannels()==1 and pcm.getsampwidth()==2 and pcm.getframerate()==22050 and pcm.getnframes()>0
                 identity=event["message_id"]
                 if identity in seen:stats["duplicates"]+=1
                 else:seen.add(identity);stats["accepted_unique"]+=1
@@ -36,7 +38,7 @@ def main():
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         try:result=subprocess.run([str(executable),"--https",f"https://127.0.0.1:{server.server_port}/isolated-lab-events",str(root/"cert.pem"),"-platform","offscreen"],capture_output=True,text=True,timeout=90)
         finally:server.shutdown();server.server_close();thread.join()
-        stats.update({"test_exit":result.returncode,"loopback_only":True,"official_server_contacted":False,"private_audio_recorded":False})
+        stats.update({"test_exit":result.returncode,"loopback_only":True,"official_server_contacted":False,"private_audio_recorded":False,"real_sapi_pcm_received":True})
         report.write_text(json.dumps(stats,indent=2),encoding="utf-8")
         print(result.stdout);print(result.stderr,file=sys.stderr)
         assert result.returncode==0 and stats["accepted_unique"]==1 and stats["duplicates"]==1 and stats["unauthorized"]==1,stats

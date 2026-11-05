@@ -1,0 +1,11 @@
+{
+  "unauthorized": 1,
+  "accepted_unique": 1,
+  "duplicates": 1,
+  "private_path_rejected": 0,
+  "test_exit": 0,
+  "loopback_only": true,
+  "official_server_contacted": false,
+  "private_audio_recorded": false,
+  "real_sapi_pcm_received": true
+}

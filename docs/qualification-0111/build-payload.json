@@ -1,0 +1,9 @@
+{
+  "application_code": "b629f873dbf8610ea9b68ba28fadd6d91a86be42",
+  "application_sha256": "18b55d0d9360fd7d687aba169bcf05d156cc62b6c7026e12d8e05969d8e711ba",
+  "version": "0.1.11",
+  "platform": "Windows x64",
+  "compiler": "MinGW 13.1",
+  "qt": "6.8.3",
+  "decoder_sources_unchanged": true
+}

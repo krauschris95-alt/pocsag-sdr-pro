@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.10
+# POCSAG SDR Pro — 0.1.11
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -7,6 +7,18 @@ Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulatio
 Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
+
+## Voix automatique et audio PrivateRadio — 0.1.11
+
+Voix autorisée par défaut : **Actif + Voix ON** sur le capcode. Le bouton général est une coupure volontaire mémorisée. Alias, pause de 300 ms puis texte complet. Sortie SAPI réouverte par annonce ; changement de sortie Windows ou échec déclenche une réinitialisation contrôlée. Voix française de secours si le jeton précédent a disparu. Outils → Synthèse vocale propose les réglages et **Rétablir la voix française et la sortie Windows par défaut**.
+
+Le diagnostic local indique la base réellement utilisée, les interrupteurs, l’éligibilité, la file, le début/fin et les erreurs COM, sans texte privé des interventions. La sortie Windows est identifiée avec son état muet et son volume ; la mesure de qualification distingue le signal réel du seul succès SAPI.
+
+**Pager ON** sur un capcode actif génère un **vrai WAV PCM et son manifeste JSON**, même avec Voix locale OFF. Outils → PrivateRadio → **Dossier des annonces vocales** : dossier, vérification d’écriture et expiration de diffusion. UUID, contrôle puis publication atomique, file SQLite persistante et reprise. TXT et tableaux restent indépendants.
+
+Relais distant **OFF par défaut**. L’application ne contacte aucun serveur officiel, même avec l’intention de relais ON : elle attend un adaptateur raccordé. L’adaptateur HTTPS est testé sur un serveur LAB isolé ; il ne constitue pas l’intégration PrivateRadio 3.0. Voir le [contrat](docs/PRIVATERADIO-AUDIO-CONTRACT.md) et le [rapport 0.1.11](docs/QUALIFICATION-0.1.11.md).
+
+Les WAV/manifestes contiennent les messages privés : choisir un dossier réservé aux comptes autorisés. Aucun audio utilisateur publié. Aucun nettoyage automatique ; surveiller l’espace disque et utiliser la migration explicite des données si nécessaire.
 
 ## Corrections 0.1.10
 

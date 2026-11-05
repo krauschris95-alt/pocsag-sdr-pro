@@ -1,0 +1,14 @@
+{
+  "local_verified_assets": [
+    {
+      "name": "POCSAG-SDR-Pro-0.1.11-windows-x64-setup.exe",
+      "size": 49301719,
+      "sha256": "88c19cf21d95e72d621d1e10851e274c992c97c464329986dd8808ed0146a31a"
+    },
+    {
+      "name": "POCSAG-SDR-Pro-0.1.11-windows-x64.zip",
+      "size": 55581576,
+      "sha256": "e053a0471e33c555e4e37b90deb92789e11417ad5ac25a2fd26d0e2ec29b983e"
+    }
+  ]
+}

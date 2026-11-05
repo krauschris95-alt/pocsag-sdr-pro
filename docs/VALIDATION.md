@@ -1,3 +1,5 @@
+Validation courante : [qualification 0.1.11](QUALIFICATION-0.1.11.md).
+
 Validation courante : [qualification 0.1.10](QUALIFICATION-0.1.10.md).
 
 Validation courante : [qualification 0.1.9](QUALIFICATION-0.1.9.md).

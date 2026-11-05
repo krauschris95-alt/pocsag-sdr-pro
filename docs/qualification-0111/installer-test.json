@@ -1,0 +1,13 @@
+{
+  "path": "Windows system only",
+  "user_file_preserved": true,
+  "destination": "fresh isolated workspace directory",
+  "install_exit": 0,
+  "all_installed_files_verified": true,
+  "uninstall_exit": 0,
+  "retry_with_more_free_space_succeeded": true,
+  "launch_exit": 0,
+  "setup_sha256": "88C19CF21D95E72D621D1E10851E274C992C97C464329986DD8808ED0146A31A",
+  "initial_low_space_install_failed": true,
+  "app_removed": true
+}
