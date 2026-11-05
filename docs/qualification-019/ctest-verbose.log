@@ -1,0 +1,174 @@
+Start testing: Nov 05 12:30 Paris, Madrid
+----------------------------------------------------------
+1/8 Testing: decoder
+1/8 Test: decoder
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/decoder_tests.exe"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"decoder" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+PASS: BCH 528 error masks; 3 baud rates; both polarities; ALPHA/NUMERIC/TONE; RIC; function; synthetic CU8 FSK end-to-end AUTO
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"decoder" end time: Nov 05 12:30 Paris, Madrid
+"decoder" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/8 Testing: integration
+2/8 Test: integration
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/integration_tests.exe" "-platform" "offscreen"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"integration" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+PASS: SQLite persistence, capcode panels/filter, UTF-8 append, multiple logs, path deduplication, live log change, restore, integrity
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+<end of output>
+Test time =   4.09 sec
+----------------------------------------------------------
+Test Passed.
+"integration" end time: Nov 05 12:30 Paris, Madrid
+"integration" time elapsed: 00:00:04
+----------------------------------------------------------
+
+3/8 Testing: independent_reference
+3/8 Test: independent_reference
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/reference_tests.exe"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"independent_reference" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+6 independent IQ fixtures PASS
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"independent_reference" end time: Nov 05 12:30 Paris, Madrid
+"independent_reference" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/8 Testing: speech_queue
+4/8 Test: speech_queue
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/speech_tests.exe"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"speech_queue" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+PASS speech order, alias first, bounded queue policies, deduplication, disable, no overlap
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"speech_queue" end time: Nov 05 12:30 Paris, Madrid
+"speech_queue" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/8 Testing: receiver_reconnect_injected
+5/8 Test: receiver_reconnect_injected
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/receiver_tests.exe"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"receiver_reconnect_injected" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+IQ-only green=1 stalled red=1 resumed=1 stopped red=1; Fault injection: errors=1 connections=3 known frames=4; PASS
+<end of output>
+Test time =   8.91 sec
+----------------------------------------------------------
+Test Passed.
+"receiver_reconnect_injected" end time: Nov 05 12:30 Paris, Madrid
+"receiver_reconnect_injected" time elapsed: 00:00:08
+----------------------------------------------------------
+
+6/8 Testing: capcode_save_regression
+6/8 Test: capcode_save_regression
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/capcode_regression_tests.exe" "-platform" "offscreen"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"capcode_save_regression" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+PASS capcode Save, validation, rollback, paths, backup and persistence
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+<end of output>
+Test time =   1.18 sec
+----------------------------------------------------------
+Test Passed.
+"capcode_save_regression" end time: Nov 05 12:30 Paris, Madrid
+"capcode_save_regression" time elapsed: 00:00:01
+----------------------------------------------------------
+
+7/8 Testing: sqlite_storage_regression
+7/8 Test: sqlite_storage_regression
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/storage_regression_tests.exe" "-platform" "offscreen"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"sqlite_storage_regression" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+PASS alternate Windows drive, Unicode/spaces, append-only, immediate save and restart
+PASS SQLite snapshots, durable retry/restart, TXT receipts, independent routing, midnight, 100001-row paging and scroll
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+[1m[31m[ERROR] rtlsdr_get_device_usb_strings(0) failed[0m
+<end of output>
+Test time =   8.45 sec
+----------------------------------------------------------
+Test Passed.
+"sqlite_storage_regression" end time: Nov 05 12:30 Paris, Madrid
+"sqlite_storage_regression" time elapsed: 00:00:08
+----------------------------------------------------------
+
+8/8 Testing: sqlite_snapshot_reproduction
+8/8 Test: sqlite_snapshot_reproduction
+Command: "C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build/sqlite_lock_reproduction.exe"
+Directory: C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+"sqlite_snapshot_reproduction" start time: Nov 05 12:30 Paris, Madrid
+Output:
+----------------------------------------------------------
+Rows fetched in persistent cursor: 256
+TXT writer=1 receiving insert=0 error=database is locked Unable to fetch row native=517
+After cursor released: 1
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"sqlite_snapshot_reproduction" end time: Nov 05 12:30 Paris, Madrid
+"sqlite_snapshot_reproduction" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 05 12:30 Paris, Madrid

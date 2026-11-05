@@ -1,3 +1,5 @@
+Validation courante : [qualification 0.1.9](QUALIFICATION-0.1.9.md).
+
 Validation courante : [qualification 0.1.8](QUALIFICATION-0.1.8.md). Les rapports ci-dessous restent historiques.
 
 # Validation actuelle : 0.1.7

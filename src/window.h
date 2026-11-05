@@ -49,7 +49,7 @@ private:
  QComboBox *format_=nullptr,*step_=nullptr;
  QCheckBox *daily_=nullptr;QLineEdit *root_=nullptr,*profileName_=nullptr;QLabel* activePath_=nullptr;
  void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
- void capcodes();void journal();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
+ void capcodes();void journal();void configureJournals(bool focusPermanent);void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
  void flushJournal();
  void setupOptions(QAction* start,QAction* stop,QAction* open,QAction* cap,QAction* log,QMenu* view,QMenu* help);
  void saveOptions();void retune();void migrate();

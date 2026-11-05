@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.8
+# POCSAG SDR Pro — 0.1.9
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -7,6 +7,16 @@ Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulatio
 Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
+
+## Sélection des destinations TXT — 0.1.9
+
+**Enregistrements → Journal** présente deux destinations indépendantes : dossier Belgique quotidien et fichier permanent des capcodes. Chaque chemin est modifiable directement. Les grands boutons **Parcourir…** et **Choisir mon fichier TXT…** demandent le sélecteur Windows natif. Un fichier existant est ouvert en ajout ; un nom nouveau peut être saisi. Cliquez **Enregistrer** pour valider et utiliser les chemins.
+
+Les lettres de disque accessibles et chemins UNC (`\\serveur\partage\Interventions.txt`) ne sont pas limités au disque C:. Les supports et partages doivent être disponibles et autorisés par Windows. Le logiciel ne monte pas de partage et ne demande pas d’identifiants réseau. Le bouton **CONFIGURER LE FICHIER TXT DES CAPCODES…** dans Capcodes ouvre directement la section du fichier permanent, sans perdre la saisie des capcodes.
+
+La validation teste réellement l’écriture dans les dossiers et l’ouverture des fichiers en ajout, sans réécrire les anciens contenus. Les chemins sont enregistrés immédiatement dans les préférences. Les erreurs indiquent la destination et conservent la saisie ainsi que les destinations actives précédentes. Aucun repli automatique vers le dossier par défaut. Les anciennes écritures en attente gardent leur destination d’origine ; les nouvelles arrivées utilisent les chemins validés.
+
+Voir le [rapport 0.1.9](docs/QUALIFICATION-0.1.9.md). Le décodeur, le filtrage des tableaux et le moteur d’écriture TXT sont inchangés.
 
 ## Corrections 0.1.8
 
@@ -97,7 +107,7 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 python -m pip install backports.zstd
 python scripts/package_hackrf.py dist/POCSAG-SDR-Pro hackrf-cache
 python scripts/build_sdr_modules.py
-python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.8
+python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.9
 ```
 
-Lire [la qualification 0.1.8](docs/QUALIFICATION-0.1.8.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.
+Lire [la qualification 0.1.9](docs/QUALIFICATION-0.1.9.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.
