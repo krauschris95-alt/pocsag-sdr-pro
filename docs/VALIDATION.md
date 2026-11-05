@@ -1,6 +1,6 @@
 ## 0.1.15 — thème clair Bleu Glacier
 
-Onze suites de tests réussies (69,44 s). Palette claire/sombre, trois tailles de texte, conservation après redémarrage et captures Windows à facteurs Qt 100/125/150 %. Qualification détaillée, limites de résolution et rapport matériel dans [QUALIFICATION-0.1.15.md](QUALIFICATION-0.1.15.md).
+Onze suites de tests réussies (69,44 s). [Compilation et packaging GitHub Actions réussis](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42121747722), avec artefact téléchargeable. Palette claire/sombre, trois tailles de texte, conservation après redémarrage et captures Windows à facteurs Qt 100/125/150 %. Qualification détaillée, limites de résolution et rapport matériel dans [QUALIFICATION-0.1.15.md](QUALIFICATION-0.1.15.md).
 
 ## 0.1.14 — ordre d’arrivée et visibilité des nouveautés
 

@@ -54,3 +54,12 @@ Relance sur le tag : run 42118262661, compilation réussie puis 10/11 suites, é
 
 
 Run 42120533500 : compilation et onze suites de tests réussies sur le runner, puis échec explicite du packaging car aucune distribution binaire backports.zstd n’est disponible dans l’environnement pip du runner. Le test du sélecteur est donc stabilisé. Le packaging utilise désormais le chemin Python explicite fourni par setup-python, version 3.14, et le [module Zstandard standard introduit en Python 3.14](https://docs.python.org/3.14/library/compression.zstd.html), avec conservation du repli historique pour les anciens runtimes locaux. Aucun paquet externe Zstandard n’est requis dans la CI. Les exécutables de l’application restent inchangés.
+
+
+## Résultat CI final
+
+[Run 42121747722 réussi](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42121747722), commit bf13e442b4d027aa572f75255ea915cdc1725985 : configuration, compilation Windows x64, tests, construction des dépendances SDR, NSIS et dépôt des artefacts réussis. Durée totale 7 min 19 s. [Artefact Windows téléchargeable](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42121747722/artifacts/13458423178), 98,8 Mo affichés, SHA-256 7cadfe84ec0344b61cbfbe986a3f477f1719f47746580106ca4d314510b81129. Le travail release est normalement ignoré sur main ; la préversion v0.1.15 est déjà publiée.
+
+Les fichiers de GitHub Releases conservent leurs empreintes locales qualifiées. Le commit de la CI ne change aucun fichier src/ par rapport au code applicatif 624ffe2 : uniquement banc de test, scripts de packaging, workflow et rapports. Le tag v0.1.15 reste immuable ; le code source avec les corrections de CI est disponible sur main et au commit bf13e44.
+
+Le garde-fou de publication a été testé localement sans réseau : préversion existante → pas de remplacement, nouvelle préversion → publication autorisée, échec de lecture de l’API → arrêt sans autorisation de publication (release-guard-check.json).
