@@ -1,0 +1,12 @@
+{
+  "verified_files": 211,
+  "path": "Windows system only",
+  "isolated_data": true,
+  "setup_sha256": "DFF226041D26DB56441727E5526801E249126943D2F67CCB05E43ED707E95FD9",
+  "install_exit": 0,
+  "all_installed_file_hashes_match": true,
+  "uninstall_exit": 0,
+  "user_file_preserved": true,
+  "app_removed": true,
+  "launch_exit": 0
+}

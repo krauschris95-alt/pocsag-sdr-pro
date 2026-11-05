@@ -43,3 +43,16 @@ Dix suites CTest réussies en 57,51 secondes, avec fichiers et bases temporaires
 ## Documentation du réseau
 
 ASTRID décrit un service de paging crypté : [description officielle du service](https://www.astrid.be/sites/public/files/2025-10/paging_encryption_paging_fr_0.pdf), [annonce officielle](https://www.astrid.be/fr/actualites/chiffrement-pour-tous-les-pagers). Cela rend possible la coexistence de contenus clairs et protégés ; aucune attribution de ces 85 octets à ce service, à un algorithme ou à une clé n'est prouvée. Les aperçus indexés ont été consultés ; l'accès direct à ces deux ressources a renvoyé HTTP 403. Aucun décodeur applicatif n'est proposé sans spécification et preuve de correspondance.
+
+## Livrables Windows x64
+
+Code applicatif compilé : 70bea989678b4069d557adecbe874288844c2ea1. Le tag final ajoute uniquement les contrôles de livraison et la provenance ; aucun changement applicatif après compilation. Les documents intégrés aux binaires ont été figés avant ces contrôles.
+
+ZIP : CRC intégral, extraction neuve, lancement code 0 avec PATH limité à Windows et données temporaires. Installateur : dossier neuf isolé, 211 fichiers tous identiques par SHA-256 au répertoire préparé, lancement code 0 sans Qt/MinGW de développement, désinstallation code 0 conservant le journal témoin et retirant l'application. Aucun remplacement d'une installation utilisateur. Rapports : portable-test.json, installer-test.json, release-assets.json.
+
+SHA-256 ZIP : 2fdb24e494422c6280b268709016012e85d3a7449cf021eae6d4ec35d1baabac.
+SHA-256 installateur : dff226041d26db56441727e5526801e249126943d2f67ccb05e43ed707e95fd9.
+
+GitHub Actions : run 42102252204 du commit applicatif, échec avant démarrage du build : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions, aucun réglage de facturation modifié. Les exécutables sont compilés et qualifiés localement.
+
+L'analyse du contenu Base64 et les corrections de classement/inspection sont validées selon les tests décrits. La cause système de la divergence d'accès SQLite et le rattachement exact de l'UUID ne sont pas déclarés résolus. Le dialogue de diagnostic ouvre la voie à une vérification depuis la connexion réellement affichée ; il ne répare ni ne remplace les données.

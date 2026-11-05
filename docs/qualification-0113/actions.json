@@ -1,0 +1,8 @@
+{
+  "run_url": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42102252204",
+  "commit": "70bea989678b4069d557adecbe874288844c2ea1",
+  "conclusion": "failure_before_build",
+  "annotation": "The job was not started because an Actions budget is preventing further use.",
+  "artifacts": 0,
+  "distributed_build": "local Windows x64"
+}
