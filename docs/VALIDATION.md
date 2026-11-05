@@ -1,3 +1,19 @@
+# Validation 0.1.4 — correction prioritaire de disposition
+
+## Agencement comparé à la maquette PDW
+
+La fenêtre principale ne conserve qu'une barre de menus, une petite barre d'outils et les deux onglets. Fréquence cyan en haut à droite. Aucun chemin TXT, grand titre, réglage secondaire ou barre de recherche au-dessus des tableaux. Deux tableaux pleine largeur, séparateur horizontal et partage initial 60/40. La gestion des capcodes reste dans son menu ; aucun troisième tableau permanent n'est ajouté.
+
+Tests Qt ajoutés : rapport initial du panneau supérieur entre 57 et 63 %, hauteur cumulée des tableaux supérieure à 88 % de la zone centrale ; panneau inférieur supérieur à 250 pixels dans la fenêtre testée. Déplacement réel du handle par événements souris de 100 pixels, changement des deux hauteurs puis restauration de leur proportion après destruction/recréation de la fenêtre. Deux défilements indépendants vérifiés avec 70 messages, dont 24 appartenant au seul capcode actif sélectionné ; un capcode inactif et un non enregistré restent uniquement en haut. Colonnes 7/8 vérifiées.
+
+Captures Windows natives : interface réelle avec textes synthétiques explicitement marqués « Message de validation interface », pour ne pas publier les transmissions reçues. Vérification visuelle : tableaux pleine largeur, absence de barres encombrantes, couleurs PDW et second onglet exclusivement dédié au spectre/waterfall.
+
+Les cinq suites de non-régression couvrent toujours le décodage indépendant, SQLite, les fichiers TXT/routages/minuit belge, les capcodes, la voix et la reconnexion injectée. Aucun changement dans decoder.cpp, dsp.h, receiver.cpp, journalworker.cpp ou speech.cpp pour cette correction. Les limites matérielles et d'endurance ci-dessous restent applicables.
+
+Compilation locale Windows x64 Release réussie. CTest : 5/5, zéro échec, 11,56 secondes. L'intégration a également été exécutée avec le plugin Windows natif : code de sortie 0. Captures : interface-0.1.4.png et spectrum-0.1.4.png. Les éventuels avertissements de nettoyage de répertoires temporaires de tests ne concernent pas la base utilisateur.
+
+Paquet 0.1.4 : nouvel essai RTL réel de 15 secondes à 169626000 Hz / 240000 éch/s, PATH limité à Windows, code de sortie 0, deux textes décodés et aucune erreur signalée. Compteurs uniquement dans portable-validation-0.1.4.json, aucun texte radio privé conservé dans le dépôt.
+
 # Validation 0.1.3 — cahier des charges officiel
 
 ## Compilation et automatisation

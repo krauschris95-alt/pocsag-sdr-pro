@@ -11,11 +11,38 @@
 #include <QTimer>
 #include <iostream>
 #include <QSemaphore>
+#include <QtWidgets>
+#include <source_location>
 struct VoiceState {QMutex mutex;QStringList said;QSemaphore began;std::atomic_bool release=false;};
 struct VoiceBackend:SpeechBackend {VoiceState& state;explicit VoiceBackend(VoiceState& s):state(s){}void configure(const SpeechSettings&)override{}void speak(const QString& text,const std::atomic_bool& cancel)override{{QMutexLocker lock(&state.mutex);state.said<<text;}state.began.release();while(!state.release&&!cancel)QThread::msleep(2);}};
 struct IntegrationChecks {
- static void require(bool b){if(!b)throw std::runtime_error("integration assertion failed");}
+ static void require(bool b,std::source_location at=std::source_location::current()){if(!b)throw std::runtime_error("integration assertion failed at line "+std::to_string(at.line()));}
+ static void compactLayout(){
+  QTemporaryDir dir;double savedRatio=0;{
+   Window w(dir.path());w.resize(1440,900);w.show();QApplication::processEvents();
+   require(w.tabs_->count()==2&&w.spectrum_->parentWidget()==w.tabs_->widget(1));
+   auto sizes=w.messageSplit_->sizes();double ratio=double(sizes[0])/(sizes[0]+sizes[1]);require(ratio>.57&&ratio<.63);
+   require(w.allView_->height()+w.savedView_->height()>w.centralWidget()->height()*.88);
+   require(w.savedView_->height()>250&&w.allView_->height()>350);
+   require(!w.root_->isVisible()&&!w.logPath_->isVisible()&&!w.step_->isVisible()&&!w.format_->isVisible());
+   int bars=0;for(auto bar:w.findChildren<QToolBar*>())if(bar->isVisible())++bars;require(bars==1);
+   auto handle=w.messageSplit_->handle(1);auto local=QPointF(handle->rect().center());auto global=QPointF(handle->mapToGlobal(local.toPoint()));
+   QMouseEvent press(QEvent::MouseButtonPress,local,global,Qt::LeftButton,Qt::LeftButton,Qt::NoModifier);QApplication::sendEvent(handle,&press);
+   QMouseEvent move(QEvent::MouseMove,local-QPointF(0,100),global-QPointF(0,100),Qt::NoButton,Qt::LeftButton,Qt::NoModifier);QApplication::sendEvent(handle,&move);
+   QMouseEvent release(QEvent::MouseButtonRelease,local,global-QPointF(0,100),Qt::LeftButton,Qt::NoButton,Qt::NoModifier);QApplication::sendEvent(handle,&release);QApplication::processEvents();
+   auto moved=w.messageSplit_->sizes();require(moved[0]<sizes[0]-50&&moved[1]>sizes[1]+50);savedRatio=double(moved[0])/(moved[0]+moved[1]);w.storePreferences();
+  }{
+   Window w(dir.path());w.show();QApplication::processEvents();auto sizes=w.messageSplit_->sizes();require(std::abs(double(sizes[0])/(sizes[0]+sizes[1])-savedRatio)<.02);
+   w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(146035,'Essais interface',1,1),(146054,'Inactif',0,1)");
+   for(int i=0;i<70;++i)w.received({i%3==0?146035u:i%3==1?146054u:2009976u,0,1200,"ALPHA","Message de validation interface — texte de test non issu du réseau radio.",0},169626000,"test");
+   require(w.all_->rowCount()==70&&w.saved_->rowCount()==24);
+   require(w.all_->columnCount()==7&&w.saved_->columnCount()==8);
+   QApplication::processEvents();require(w.allView_->verticalScrollBar()->maximum()>0&&w.savedView_->verticalScrollBar()->maximum()>0);
+   QString qa=qEnvironmentVariable("POCSAG_QA_DIR");if(!qa.isEmpty()){QDir().mkpath(qa);w.messageSplit_->setSizes({600,400});QApplication::processEvents();w.grab().save(qa+"/compact-messages.png");w.tabs_->setCurrentIndex(1);QApplication::processEvents();require(w.spectrum_->height()>w.centralWidget()->height()*.90);w.grab().save(qa+"/compact-spectrum.png");}
+  }
+ }
  static void run(){
+  compactLayout();
   QTemporaryDir dir;require(dir.isValid());QString dbPath;{
    Window w(dir.path());require(w.tabs_->count()==2);require(w.tabs_->tabText(0)=="Messages");require(w.tabs_->tabText(1)=="Spectre / Waterfall");w.messageSplit_->setSizes({300,200});dbPath=w.db_.databaseName();
    require(!w.allowTone_->isChecked());w.received({760833,0,1200,"TONE","",0});require(w.all_->rowCount()==0&&w.saved_->rowCount()==0);

@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.3
+# POCSAG SDR Pro — 0.1.4
 
 Application Windows x64 C++20 / Qt 6 / SQLite, réception RTL-SDR et backend HackRF intégrés, sans télémétrie ni transmission automatique des messages. Préversion en qualification, projet indépendant.
 
@@ -70,7 +70,7 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 
 GitHub Actions utilise MinGW x64 et inclut ses DLL pour un ZIP portable. Les tags `v*` publient une préversion après tests. Moteur seul : `-DBUILD_GUI=OFF`.
 
-Voir [validation](docs/VALIDATION.md), [notes 0.1.3](docs/RELEASE-0.1.3.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
+Voir [validation](docs/VALIDATION.md), [notes 0.1.4](docs/RELEASE-0.1.4.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
 
 Pour 0.1.2, le budget Actions bloque les jobs : le ZIP est construit et testé localement puis publié dans GitHub Releases. La CI devra être relancée après rétablissement du budget.
 
@@ -86,3 +86,8 @@ Récepteur → Paramètres matériels règle taux IQ, AGC RTL, bande tuner, filt
 Le second onglet affiche la FFT réelle et le waterfall : axes MHz, zoom, échelle dBFS, bande du canal, contraste et cadence. Cliquer accorde le récepteur. Le démarrage automatique de réception et le lancement Windows sont facultatifs, désactivés initialement. Les erreurs sont consignées dans technical.log sans boîte modale pendant la réception.
 
 Cette préversion n'est pas qualifiée H24. La récupération après débranchement physique et le HackRF restent à vérifier sur matériel. Les données utilisateur persistent localement et ne sont pas incorporées au ZIP.
+
+
+## Disposition compacte 0.1.4
+
+Une barre de menus, une petite barre à icônes et la fréquence cyan à droite. Messages contient deux tableaux pleine largeur, avec partage initial 60/40 et séparateur horizontal mémorisé. Les réglages de réception sont dans Récepteur ; les dossiers, profils et interrupteurs TXT dans Enregistrements ; le pas dans Récepteur ; le zoom et les réglages du spectre dans Affichage. Les barres de recherche ne prennent plus de place : clic droit dans chaque tableau pour rechercher, copier, exporter ou relire. Double-clic pour consulter le message complet. Le spectre occupe exclusivement le second onglet.

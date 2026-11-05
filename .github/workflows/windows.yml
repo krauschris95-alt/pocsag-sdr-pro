@@ -52,5 +52,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           prerelease: true
-          body_path: docs/RELEASE-0.1.3.md
+          body_path: docs/RELEASE-0.1.4.md
           files: POCSAG-SDR-Pro-windows-x64.zip
