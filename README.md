@@ -97,7 +97,7 @@ windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 python -m pip install backports.zstd
 python scripts/package_hackrf.py dist/POCSAG-SDR-Pro hackrf-cache
 python scripts/build_sdr_modules.py
-python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.7
+python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.8
 ```
 
-Lire [la qualification 0.1.7](docs/QUALIFICATION-0.1.7.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.
+Lire [la qualification 0.1.8](docs/QUALIFICATION-0.1.8.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.

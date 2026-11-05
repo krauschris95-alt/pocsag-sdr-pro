@@ -1,0 +1,10 @@
+{
+  "destination": "fresh isolated workspace directory",
+  "user_file_preserved": true,
+  "setup_sha256": "0A790A9CE27E0170E5E2730A529E35C1266975AF8A3BFBCF7B2D8D824D1E0671",
+  "app_removed": true,
+  "path": "Windows system only",
+  "launch_exit": 0,
+  "install_exit": 0,
+  "uninstall_exit": 0
+}

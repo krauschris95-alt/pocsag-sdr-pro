@@ -32,9 +32,9 @@ struct IntegrationChecks {
    QMouseEvent press(QEvent::MouseButtonPress,local,global,Qt::LeftButton,Qt::LeftButton,Qt::NoModifier);QApplication::sendEvent(handle,&press);
    QMouseEvent move(QEvent::MouseMove,local-QPointF(0,100),global-QPointF(0,100),Qt::NoButton,Qt::LeftButton,Qt::NoModifier);QApplication::sendEvent(handle,&move);
    QMouseEvent release(QEvent::MouseButtonRelease,local,global-QPointF(0,100),Qt::LeftButton,Qt::NoButton,Qt::NoModifier);QApplication::sendEvent(handle,&release);QApplication::processEvents();
-   auto moved=w.messageSplit_->sizes();require(moved[0]<sizes[0]-50&&moved[1]>sizes[1]+50);savedRatio=double(moved[0])/(moved[0]+moved[1]);w.storePreferences();
+   auto moved=w.messageSplit_->sizes();require(moved[0]<sizes[0]-50&&moved[1]>sizes[1]+50);savedRatio=double(moved[0])/(moved[0]+moved[1]);w.allView_->setColumnWidth(0,130);w.savedView_->setColumnWidth(0,140);w.storePreferences();
   }{
-   Window w(dir.path());w.show();QApplication::processEvents();auto sizes=w.messageSplit_->sizes();require(std::abs(double(sizes[0])/(sizes[0]+sizes[1])-savedRatio)<.02);
+   Window w(dir.path());w.show();QApplication::processEvents();require(w.allView_->columnWidth(0)==130&&w.savedView_->columnWidth(0)==140);auto sizes=w.messageSplit_->sizes();require(std::abs(double(sizes[0])/(sizes[0]+sizes[1])-savedRatio)<.02);
    w.messageSplit_->setSizes({600,400});QApplication::processEvents();
    w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(146035,'Essais interface',1,1),(146054,'Inactif',0,1)");
    for(int i=0;i<70;++i)w.received({i%3==0?146035u:i%3==1?146054u:2009976u,0,1200,"ALPHA","Message de validation interface — texte de test non issu du réseau radio.",0},169626000,"test",QDateTime(QDate(2026,11,5),QTime(12,0),QTimeZone("Europe/Brussels")).addSecs(i));

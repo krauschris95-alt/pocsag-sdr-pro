@@ -1,3 +1,27 @@
 phase=0 elapsed=60 iq_bytes=28196864 decoded=315 stored=29 pending=0
 phase=1 elapsed=60 iq_bytes=57049088 decoded=653 stored=62 pending=0
 phase=2 elapsed=60 iq_bytes=85917696 decoded=956 stored=98 pending=0
+phase=3 elapsed=60 iq_bytes=114720768 decoded=1137 stored=119 pending=0
+phase=3 elapsed=120 iq_bytes=143556608 decoded=1212 stored=123 pending=0
+phase=3 elapsed=180 iq_bytes=172343296 decoded=1382 stored=135 pending=0
+phase=3 elapsed=240 iq_bytes=201129984 decoded=1610 stored=155 pending=0
+phase=3 elapsed=300 iq_bytes=229965824 decoded=1834 stored=173 pending=0
+phase=3 elapsed=360 iq_bytes=258736128 decoded=2382 stored=246 pending=0
+phase=3 elapsed=420 iq_bytes=287571968 decoded=2917 stored=315 pending=0
+phase=3 elapsed=480 iq_bytes=316342272 decoded=3235 stored=339 pending=0
+phase=3 elapsed=540 iq_bytes=345161728 decoded=3599 stored=364 pending=0
+phase=3 elapsed=600 iq_bytes=373981184 decoded=3898 stored=383 pending=0
+phase=3 elapsed=660 iq_bytes=402735104 decoded=4218 stored=407 pending=0
+phase=3 elapsed=720 iq_bytes=431554560 decoded=4509 stored=430 pending=0
+phase=3 elapsed=780 iq_bytes=460341248 decoded=4733 stored=447 pending=0
+phase=3 elapsed=840 iq_bytes=489160704 decoded=4892 stored=458 pending=0
+phase=3 elapsed=900 iq_bytes=517980160 decoded=5011 stored=467 pending=0
+phase=3 elapsed=960 iq_bytes=546750464 decoded=5140 stored=478 pending=0
+phase=3 elapsed=1020 iq_bytes=575569920 decoded=5442 stored=504 pending=0
+phase=3 elapsed=1080 iq_bytes=604372992 decoded=5888 stored=546 pending=0
+phase=3 elapsed=1140 iq_bytes=633192448 decoded=6241 stored=577 pending=0
+phase=3 elapsed=1200 iq_bytes=661962752 decoded=6533 stored=600 pending=0
+PASS actual RF, both tables and two TXT journals under temporary SQLite locks
+Found Rafael Micro R828D tuner
+Found Rafael Micro R828D tuner
+[R82XX] PLL not locked!

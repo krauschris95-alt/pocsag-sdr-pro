@@ -1,0 +1,9 @@
+{
+  "uninstall_exit": 0,
+  "path": "Windows system only",
+  "user_file_preserved": true,
+  "destination": "isolated workspace directory",
+  "app_removed": true,
+  "install_exit": 0,
+  "launch_exit": 0
+}
