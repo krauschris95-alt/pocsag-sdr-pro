@@ -17,3 +17,5 @@ Voyant vert SDR ACTIF seulement si le thread reçoit des IQ matériels récents,
 Les erreurs Save sont consignées dans technical.log. Les exceptions Qt non interceptées et, au mieux, les exceptions fatales Windows sont consignées dans exceptions.log dans le dossier local de l'application. Ce journal ne remplace pas un dump de diagnostic et ne garantit pas la récupération d'une faute mémoire arbitraire.
 
 Voir VALIDATION.md pour les résultats réellement obtenus, les essais matériels et les limites.
+
+Résultats : 6 suites CTest réussies (14,83 s), Save avec RTL réel pendant 60 secondes réussi, cinq textes reçus et écrits en TXT, vert pendant les IQ et rouge à l'arrêt ; test vocal français natif réussi. GitHub Actions reste bloqué avant démarrage par le budget du compte (run 41944467866) : paquet compilé et testé localement. Pas de qualification H24, de débranchement USB physique ni de HackRF réel.

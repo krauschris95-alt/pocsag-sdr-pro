@@ -16,6 +16,10 @@ SAPI Windows natif : voix française Hortense sélectionnée, lecture terminée 
 
 Limites : pas de test de débranchement physique USB, de HackRF réel ou d'endurance H24 ; fichier verrouillé et parent inaccessible testés, pas de matrice exhaustive des ACL NTFS ou de pannes réseau/électriques. Les dialogues utilisent le sélecteur Qt/Windows ; les tests de chemins portent sur les champs du dialogue et la sauvegarde, pas sur tous les scénarios du sélecteur natif.
 
+GitHub Actions 0.1.5 [41944467866](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/41944467866) : job non démarré, budget du compte bloquant. ZIP Windows compilé et testé localement, aucun succès CI revendiqué.
+
+ZIP 0.1.5 extrait dans un nouveau dossier : démarrage/capture réussis, sortie 0 avec PATH limité à Windows. Contrôle du contenu : aucune base utilisateur, capture privée ou DLL de test dans l'archive.
+
 # Validation 0.1.4 — correction prioritaire de disposition
 
 ## Agencement comparé à la maquette PDW
