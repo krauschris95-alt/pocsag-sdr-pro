@@ -1,5 +1,6 @@
 #include "decoder.h"
 #include "dsp.h"
+#include "payloadanalysis.h"
 #include <cmath>
 #include <numbers>
 #include <iostream>
@@ -16,7 +17,7 @@ int main(){
   int function=baud==512?0:3;feed(d,Sync,inv);feed(d,encode((760832u>>3)<<2|function),inv);
   std::vector<bool> bits;for(char c:std::string("BONJOUR"))for(int i=0;i<7;++i)bits.push_back((c>>i)&1);
   for(int k=0;k<4;++k){uint32_t info=1u<<20;for(int j=0;j<20;++j)if(k*20+j<int(bits.size())&&bits[k*20+j])info|=1u<<(19-j);feed(d,encode(info),inv);}
-  feed(d,Idle,inv);require(out.size()==1&&out[0].text=="BONJOUR"&&out[0].ric==760832&&out[0].baud==baud&&out[0].function==function);require(interpret(out[0],"AUTO").type=="AMBIGUOUS");
+  feed(d,Idle,inv);require(out.size()==1&&out[0].text=="BONJOUR"&&out[0].ric==760832&&out[0].baud==baud&&out[0].function==function);require(interpret(out[0],"AUTO").type=="ALPHA");
   feed(d,encode((122120u>>3)<<2),inv);feed(d,Idle,inv);require(out.back().type=="TONE");
  }
  for(int function=0;function<4;++function){std::vector<Message> out;Decoder d(1200,[&](Message m){out.push_back(m);});feed(d,Sync);for(int i=0;i<14;++i)feed(d,Idle);feed(d,encode((2097151u>>3)<<2|function));feed(d,Idle);require(out.size()==1&&out[0].ric==2097151&&out[0].function==function);}
@@ -46,5 +47,6 @@ int main(){
   require(interpret(out[0],"AUTO").type=="AMBIGUOUS");require(interpret(out[0],"TONE").type=="TONE");require(!numeric.rawBits.empty());
  }
  {std::vector<Message> out;Decoder d(2400,[&](Message m){out.push_back(m);});feed(d,Sync);feed(d,encode(3));std::vector<bool> bits;for(unsigned c:{1u,2u,27u,127u,1u,2u,27u,127u})for(int j=0;j<7;++j)bits.push_back((c>>j)&1);while(bits.size()%20)bits.push_back(0);for(size_t k=0;k<bits.size()/20;++k){uint32_t info=1u<<20;for(int j=0;j<20;++j)if(bits[k*20+j])info|=1u<<(19-j);feed(d,encode(info));}feed(d,Idle);require(out.size()==1&&!out[0].alphaValid&&out[0].type=="DIAGNOSTIC"&&!out[0].rawWords.empty());require(interpret(out[0],"AUTO").type=="AMBIGUOUS");auto partial=out[0];partial.complete=false;partial.termination="uncorrectable word";require(interpret(partial,"NUMERIC").type=="INCOMPLETE");}
+ {auto binary=assessAlpha("AAECAwQFBgcICQoLDA0ODxAREhMUFRYX");require(binary.base64&&binary.binary&&!binary.plausibleAlpha);require(!assessAlpha("AAECAwQFBgcICQoLDA0ODxAREhMUFRY!").base64);require(!assessAlpha("AAAAAAAAAAAAAAAAAAAAAB==").base64);require(assessAlpha("APPEL : intervention de test").plausibleAlpha);require(!assessAlpha("abcdefghijklmnopqrstuvwxyz0123456789!@").plausibleAlpha);Message m{42,0,2400,"ALPHA","",0};m.alpha="AAECAwQFBgcICQoLDA0ODxAREhMUFRYX";m.rawBits="1010";m.numeric="5";require(interpret(m,"AUTO").type=="AMBIGUOUS"&&interpret(m,"ALPHA").type=="AMBIGUOUS");m.alpha="APPEL : intervention de test";require(interpret(m,"AUTO").type=="ALPHA");}
  std::cout<<"PASS: BCH 528 error masks; 3 baud rates; both polarities; ALPHA/NUMERIC/TONE; RIC; function; synthetic CU8 FSK; extended numeric/all functions/batch split/2-bit BCH; binary ambiguity/incomplete\n";
 }

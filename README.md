@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.12
+# POCSAG SDR Pro — 0.1.13
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -8,17 +8,19 @@ Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
 
-## Interprétation ALPHA / NUMERIC — 0.1.12
+## Interprétation ALPHA / NUMERIC — 0.1.13
 
 Récepteur → Interprétation des données définit la politique réseau. Capcodes → Paramètres avancés permet **AUTO / ALPHA / NUMERIC / TONE**, indépendamment pour chaque capcode ; INHERIT conserve la politique réseau. Les choix sont mémorisés. Le défaut d'une nouvelle configuration est AUTO ; les anciens choix ALPHA/NUMERIC restent conservés.
 
-**AUTO ne prétend pas reconnaître le format applicatif.** Chaque groupe de quatre bits possède une représentation numérique, y compris des données binaires. Sans règle réseau ou capcode explicite, un message avec charge utile est AMBIGUOUS : les deux candidats restent accessibles, aucune voix ni annonce WAV automatique. Pour un émetteur dont le format est connu, choisir ALPHA ou NUMERIC explicitement. Les bits de fonction 0–3 ne sont pas utilisés comme preuve de type. Les capcodes existants et leurs interrupteurs ne sont pas réécrits.
+**AUTO utilise une sélection heuristique documentée, pas une preuve du format applicatif.** Un texte ALPHA syntaxiquement valide et plausible est affiché et annoncé selon les interrupteurs habituels ; l'alternative NUMERIC et l'incertitude restent dans le diagnostic. Les charges compactes longues sans mots, à contrôles ou compatibles Base64 restent AMBIGUOUS et ne déclenchent pas de voix/WAV. Les chaînes Base64 sont analysées sans remplacement du texte original ni déchiffrement supposé.
+
+Une règle ALPHA/NUMERIC/TONE explicite du capcode est prioritaire. AUTO ou INHERIT sur un capcode consulte la politique réseau globale ; si celle-ci est AUTO, la sélection heuristique s'applique. NUMERIC explicite reste disponible pour les émetteurs connus. Un rendu numérique valide ne prouve jamais à lui seul le type transmis. Les fonctions 0–3 n'imposent aucun type. Les capcodes et leurs interrupteurs ne sont pas réécrits.
 
 NUMERIC prend en charge les chiffres et `. U espace - ] [` à 512/1200/2400 bauds. Le remplissage numérique final par espaces est retiré ; le protocole ne permet pas de distinguer un espace final intentionnel du remplissage. Les bits bruts restent disponibles. Les chiffres sont prononcés séparément, tandis que les TXT et le champ texte Pager conservent le contenu décodé exact.
 
-Double-cliquer sur un message ouvre son texte complet, les candidats ALPHA/NUMERIC, la politique appliquée, les bits utiles corrigés, les mots radio avant correction, la fonction et le diagnostic. Une perte de synchronisation, un mot non corrigeable ou une fin de flux conserve le préfixe reçu comme INCOMPLETE, sans voix/WAV automatique. Les données non textuelles ne sont plus supprimées à l'ingestion par le filtre Diagnostics. Les anciens enregistrements n'avaient pas ces données brutes : elles ne peuvent pas être reconstituées.
+Double-cliquer sur un message ouvre son texte complet, les candidats ALPHA/NUMERIC, la politique appliquée, les bits utiles corrigés, les mots radio avant correction, la fonction et le diagnostic. Une perte de synchronisation, un mot non corrigeable ou une fin de flux conserve le préfixe reçu comme INCOMPLETE, sans voix/WAV automatique. Les données non textuelles ne sont plus supprimées à l'ingestion par le filtre Diagnostics. Les champs absents sont expliqués. Les anciens enregistrements sans brut indiquent « Données non disponibles pour cet ancien enregistrement » ; leurs données radio ne peuvent pas être reconstituées. Enregistrements → Emplacement des données SQLite → Diagnostic de la connexion interroge la connexion réellement ouverte : PID, exécutable, fichiers, PRAGMA database_list, nombre de lignes et recherche UUID, sans écriture SQL.
 
-Validation : six vecteurs IQ externes ALPHA/NUMERIC concordent avec multimon-ng, tous les débits et symboles numériques étendus. Une capture RTL réelle de 60 secondes donne 49 correspondances exactes dans chaque interprétation ; une trame supplémentaire reste non corroborée. Cela ne prouve pas qu'un émetteur réel utilise NUMERIC ni que les données compactes sont chiffrées. Voir le [rapport et les limites 0.1.12](docs/QUALIFICATION-0.1.12.md).
+Validation : six vecteurs IQ externes ALPHA/NUMERIC concordent avec multimon-ng, tous les débits et symboles numériques étendus. Une capture RTL réelle de 60 secondes donne 49 correspondances exactes dans chaque interprétation ; une trame supplémentaire reste non corroborée. Cela ne prouve pas qu'un émetteur réel utilise NUMERIC ni que les données compactes sont chiffrées. Voir le [rapport et les limites 0.1.13](docs/QUALIFICATION-0.1.13.md).
 
 ## Voix automatique et audio PrivateRadio — 0.1.11
 

@@ -1,7 +1,7 @@
 """Aggregate-only comparison. IQ/audio and message text remain in private work files.
 Uses independent multimon-ng and a separate box-FIR/FM/linear resampler, standard library only.
 """
-import argparse,array,collections,hashlib,json,math,os,pathlib,re,subprocess,sys
+import argparse,array,base64,collections,hashlib,json,math,os,pathlib,re,subprocess,sys
 p=argparse.ArgumentParser();p.add_argument('--capture',type=pathlib.Path,required=True);p.add_argument('--report',type=pathlib.Path,required=True);a=p.parse_args()
 root=pathlib.Path.cwd();env=os.environ.copy();env['PATH']=str(root/'.tools/Qt/Tools/mingw1310_64/bin')+os.pathsep+str(root/'.tools/Qt/6.8.3/mingw_64/bin')+os.pathsep+env['PATH']
 def run(args):
@@ -49,6 +49,20 @@ for mode,col in [('ALPHA',6),('NUMERIC',7)]:
    stats.append({'same_address_function_baud_candidates':len(candidates),'reference_length':len(e[3]),'application_lengths':[len(o[3]) for o in candidates],'first_difference_codepoints':[[next(([ord(x),ord(y)] for x,y in zip(e[3],o[3]) if x!=y),[])][0] for o in candidates]})
   private['alpha_difference_shapes']=stats
  matched=collections.Counter(expected)&collections.Counter(actual)
+ if mode=='ALPHA':
+  encoded=collections.Counter()
+  for row,n in matched.items():
+   text=row[3]
+   if len(text)<24:continue
+   try:payload=base64.b64decode(text,validate=True)
+   except ValueError:continue
+   if base64.b64encode(payload).decode('ascii')!=text:continue
+   try:decoded=payload.decode('utf8');binary=any(ord(c)<32 and c not in '\t\r\n' or ord(c)==127 for c in decoded)
+   except UnicodeDecodeError:binary=True
+   if not binary:continue
+   kind='gzip-compatible' if payload.startswith(b'\x1f\x8b') else 'zip-compatible' if payload.startswith(b'PK\x03\x04') else 'png-compatible' if payload.startswith(b'\x89PNG') else 'unknown'
+   encoded[kind]+=n
+  private['independently_matched_base64_binary']=dict(encoded)
  if mode=='ALPHA':private['matched_long_compact_alpha']=sum(n for row,n in matched.items() if len(row[3])>=24 and ' ' not in row[3])
  if mode=='ALPHA':private['matched_control_or_symbol_rich_alpha']=sum(n for row,n in matched.items() if any(ord(c)<32 and c not in '\t\r\n' for c in row[3]) or len(row[3])>=20 and sum(not c.isalnum() and not c.isspace() for c in row[3])/len(row[3])>.25)
 report['private_rf_capture']=private;report['limitations']=['RF sender encoding is unknown; numeric rendering alone is not evidence of a numeric transmission.','Independent discriminator differs from the application; unmatched frames are reported, not hidden.','Synthetic numeric IQ is independently generated; no identified live numeric transmitter confirmed.']

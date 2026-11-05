@@ -1,0 +1,95 @@
+{
+  "independent_tool": "multimon-ng b5f7d71c5e9b5a76093ba55c515968dc40f92804",
+  "synthetic": {
+    "512-ALPHA": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    },
+    "512-NUMERIC": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    },
+    "1200-ALPHA": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    },
+    "1200-NUMERIC": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    },
+    "2400-ALPHA": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    },
+    "2400-NUMERIC": {
+      "reference": 1,
+      "application": 1,
+      "exact_matches": 1,
+      "reference_unmatched": 0,
+      "application_unmatched": 0
+    }
+  },
+  "private_rf_capture": {
+    "capture_sha256": "9cb775c552e4a52f181f5552400f9743f68853c0d268497b1b65fbcad8e8b2cf",
+    "iq_bytes": 28800000,
+    "duration_seconds": 60.0,
+    "complete": 484,
+    "incomplete": 1,
+    "messages_with_corrected_bits": 0,
+    "alpha_control_payloads": 1,
+    "ALPHA": {
+      "reference": 49,
+      "application": 50,
+      "exact_matches": 49,
+      "reference_unmatched": 0,
+      "application_unmatched": 1,
+      "application_unmatched_shapes": [
+        {
+          "baud": 2400,
+          "function": 0,
+          "length": 61
+        }
+      ]
+    },
+    "alpha_difference_shapes": [],
+    "independently_matched_base64_binary": {
+      "unknown": 5
+    },
+    "matched_long_compact_alpha": 5,
+    "matched_control_or_symbol_rich_alpha": 1,
+    "NUMERIC": {
+      "reference": 49,
+      "application": 50,
+      "exact_matches": 49,
+      "reference_unmatched": 0,
+      "application_unmatched": 1,
+      "application_unmatched_shapes": [
+        {
+          "baud": 2400,
+          "function": 0,
+          "length": 110
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "RF sender encoding is unknown; numeric rendering alone is not evidence of a numeric transmission.",
+    "Independent discriminator differs from the application; unmatched frames are reported, not hidden.",
+    "Synthetic numeric IQ is independently generated; no identified live numeric transmitter confirmed."
+  ]
+}

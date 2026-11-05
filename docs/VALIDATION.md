@@ -144,3 +144,8 @@ Les rapports ne contiennent que compteurs et empreintes. Captures, adresses et t
 ## Version 0.1.12
 
 Voir [qualification numérique et non-régression](QUALIFICATION-0.1.12.md). Les données brutes et candidats sont désormais conservés ; les ambiguïtés et préfixes incomplets ne déclenchent pas de voix automatique. Les comparaisons radio n’identifient pas le format applicatif de l’émetteur.
+
+
+## Version 0.1.13
+
+Voir [comparaison des versions, Base64 et limites du diagnostic SQLite](QUALIFICATION-0.1.13.md). La divergence entre l’image SQLite accessible et la fenêtre utilisateur reste non résolue ; aucune antériorité de l’événement signalé n’est affirmée.

@@ -1,0 +1,11 @@
+{
+  "integration_windows_exit": 0,
+  "pager_windows_exit": 0,
+  "legacy_inspection_explained": true,
+  "base64_original_preserved_no_automatic_audio": true,
+  "connection_inspection_total_changes_unchanged": true,
+  "ctest_passed": 10,
+  "ctest_total": 10,
+  "ctest_seconds": 57.51,
+  "data": "isolated synthetic fixtures"
+}

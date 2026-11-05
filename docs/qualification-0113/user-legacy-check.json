@@ -1,0 +1,28 @@
+{
+  "database_accessible_schema": 0,
+  "database_accessible_rows": 0,
+  "database_bytes": 32768,
+  "wal_bytes": 0,
+  "same_qt_driver_confirms": true,
+  "active_connection_not_observed": true,
+  "event_uuid_mapping": "unresolved",
+  "user_reported_times": [
+    "2026-11-05 13:10:53",
+    "2026-11-05 13:11:52"
+  ],
+  "v0112_publication_local": "2026-11-05 18:54",
+  "txt_requested_rows_correlated": 2,
+  "txt_times": [
+    "13:10:53",
+    "13:11:52"
+  ],
+  "txt_dates": [
+    "05/11/2026",
+    "05/11/2026"
+  ],
+  "txt_same_original_text": true,
+  "canonical_base64": true,
+  "decoded_bytes": 85,
+  "decoded_non_textual": true,
+  "identified_application_format": null
+}

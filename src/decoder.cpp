@@ -1,6 +1,7 @@
 #include "decoder.h"
 #include <bit>
 #include <cstdio>
+#include "payloadanalysis.h"
 namespace pocsag {
 static uint32_t remainder(uint32_t v) { for(int i=30;i>=10;--i) if(v&(1u<<i)) v^=0x769u<<(i-10); return v&1023; }
 uint32_t encode(uint32_t info) { uint32_t v=(info&0x1fffff)<<10; v|=remainder(v); return (v<<1)|(std::popcount(v)&1); }
@@ -38,6 +39,8 @@ Message interpret(Message m,const std::string& mode){
  if(!m.complete){m.type="INCOMPLETE";m.text=m.alpha;m.status="Incomplete payload: "+m.termination;return m;}
  if(mode=="TONE"){m.type="TONE";m.text="";m.status="Configured TONE policy; payload retained";return m;}
  if(m.rawBits.empty())return m;
+ auto assessment=assessAlpha(m.alpha);
+ if(mode!="NUMERIC"&&assessment.base64){m.type="AMBIGUOUS";m.text=m.alpha;m.status="ALPHA transport / "+assessment.description+" ; aucune annonce automatique";return m;}
  if(mode=="NUMERIC"){m.type="NUMERIC";m.text=m.numeric;m.status="BCH valid; NUMERIC selected by configured policy (not inferred from function)";}
  else if(mode=="ALPHA"){
   m.type=m.alphaValid&&!m.alpha.empty()?"ALPHA":"DIAGNOSTIC";m.text=m.alpha;
@@ -46,8 +49,9 @@ Message interpret(Message m,const std::string& mode){
   // Every four-bit value has a numeric representation. Printable ASCII or a
   // decimal-looking candidate cannot prove the sender's application encoding.
   // Only an explicit network/capcode policy can resolve that ambiguity safely.
-  m.type="AMBIGUOUS";m.text=m.alpha.empty()?m.numeric:m.alpha;
-  m.status=m.alphaValid?"BCH valid; ALPHA and NUMERIC candidates; sender encoding unknown":"BCH valid; unsupported ALPHA controls; NUMERIC or application/binary data possible";
+  m.type=m.alphaValid&&assessment.plausibleAlpha?"ALPHA":"AMBIGUOUS";m.text=m.alpha.empty()?m.numeric:m.alpha;
+  m.status="BCH valide ; AUTO : "+assessment.description;
+  if(!m.alphaValid)m.status+=" ; contrôles ALPHA non pris en charge";
  }return m;
 }
 void Decoder::interrupt(const std::string& reason){

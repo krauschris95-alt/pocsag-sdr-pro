@@ -1,0 +1,22 @@
+{
+    "all_txt_exact_bytes": true,
+    "decoder_frames": 631,
+    "destinations": 5,
+    "duration_seconds": 300,
+    "frequency_hz": 169626000,
+    "iq_bytes": 143425536,
+    "iq_continued_after_speech": true,
+    "iq_during_speech": true,
+    "isolated_data": true,
+    "lower_rows": 49,
+    "pending_txt": 0,
+    "sapi_completed": 3,
+    "sqlite_lock_injections": 3,
+    "sqlite_messages": 49,
+    "sqlite_retries": 61,
+    "stale_iq_polls": 0,
+    "txt_lines": 147,
+    "upper_rows": 49,
+    "wav_ready": 3,
+    "window_minimized": true
+}
