@@ -19,6 +19,8 @@
 #include <QSplitter>
 #include <QDateTimeEdit>
 #include <QTimer>
+#include <QProgressBar>
+#include <QElapsedTimer>
 #include <complex>
 #include <memory>
 #include <deque>
@@ -65,7 +67,7 @@ private:
  void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();
  Receiver* addReceiver(RadioConfig config);void refreshSources();
  std::deque<QJsonObject> pendingMessages_;QString pendingDirectory_;bool draining_=false;QTimer* ingestionTimer_=nullptr;
- QCheckBox* selectedLogging_=nullptr;QLineEdit* selectedLogPath_=nullptr;QLabel* quality_=nullptr;
+ QCheckBox* selectedLogging_=nullptr;QLineEdit* selectedLogPath_=nullptr;QLabel* quality_=nullptr;QAction* voiceAction_=nullptr;QProgressBar* qualityBar_=nullptr;quint64 qualityWords_=0,qualityRejected_=0;QElapsedTimer qualityActivity_;
  quint64 acceptedFrames_=0,persistedFrames_=0,sqliteRetries_=0;QString lastStorageError_;
  void initIngestion();void pumpMessages();bool storePending(const QJsonObject& value);void storageProblem(QString text);
  void soapyOptions();

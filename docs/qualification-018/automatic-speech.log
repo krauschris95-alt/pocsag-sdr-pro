@@ -1,0 +1,6 @@
+PASS saved per-capcode automatic French SAPI, master ON/OFF, completed without blocking insertion
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+PASS capcode Save, validation, rollback, paths, backup and persistence
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed

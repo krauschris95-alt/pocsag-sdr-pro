@@ -21,7 +21,7 @@ public:
  QVariant headerData(int section,Qt::Orientation orientation,int role=Qt::DisplayRole)const override{if(role==Qt::DisplayRole&&orientation==Qt::Horizontal)return headers_.value(section);return {};}
  QVariant data(const QModelIndex& idx,int role=Qt::DisplayRole)const override{
   if(!idx.isValid())return {};if(role==Qt::FontRole&&idx.column()==0){QFont font("Consolas",10);font.setBold(true);return font;}
-  if(role==Qt::ForegroundRole){if(idx.column()==1||idx.column()==2)return QColor("#c48aff");if(idx.column()==3||idx.column()==5)return QColor("#ffe56b");if(idx.column()==0||(headers_.size()==8&&idx.column()==6)){auto color=colors.value(data(index(idx.row(),0),Qt::DisplayRole).toString());if(color.isValid())return color;}return QColor("#42e6ff");}
+  if(role==Qt::ForegroundRole){if(idx.column()==1||idx.column()==2||(headers_.size()==8&&idx.column()==6))return QColor("#c48aff");if(idx.column()==3||idx.column()==5)return QColor("#ffe56b");if(idx.column()==0||(headers_.size()==8&&idx.column()==6)){auto color=colors.value(data(index(idx.row(),0),Qt::DisplayRole).toString());if(color.isValid())return color;}return QColor("#42e6ff");}
   if(role!=Qt::DisplayRole&&role!=Qt::ToolTipRole)return {};int page=idx.row()/PageSize;if(!pages_.contains(page)&&!load(page))return {};return pages_.value(page).value(idx.row()%PageSize).value(idx.column());
  }
  bool apply(QString query,const QSqlDatabase& db){bool changed=query!=base_;db_=db;QString body=query.left(query.lastIndexOf("ORDER BY"));QSqlQuery count(db_);if(!count.exec("SELECT count(*) FROM ("+body+")")||!count.next()){if(problem)problem(count.lastError().text());return false;}int total=count.value(0).toInt();count.finish();bool append=!changed&&column_<0&&total>=total_&&headers_.size()>0;

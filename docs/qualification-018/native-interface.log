@@ -1,0 +1,15 @@
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+PASS: SQLite persistence, capcode panels/filter, UTF-8 append, multiple logs, path deduplication, live log change, restore, integrity

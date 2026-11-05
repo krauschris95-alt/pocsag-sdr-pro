@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.7
+# POCSAG SDR Pro — 0.1.8
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -7,6 +7,18 @@ Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulatio
 Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
+
+## Corrections 0.1.8
+
+Les interrupteurs **Actif**, **En bas**, **Voix**, **Journal TXT** et **Pager PrivateRadio** affichent explicitement ON/OFF dans la gestion des capcodes. Les réglages secondaires sont accessibles par **Paramètres avancés du capcode** ; les anciennes valeurs restent conservées. Le relais PrivateRadio demeure une préférence sans transmission réseau.
+
+La barre supérieure propose **Voix ON/OFF**. Le menu Outils conserve le choix de voix Windows, volume, vitesse, test et arrêt ; le menu contextuel des tableaux permet de relire un message. Chaque lecture automatique annonce l’alias, puis le message complet, dans une file indépendante de la réception. L’interrupteur général et la voix individuelle doivent être activés.
+
+**Derniers messages** ramène le tableau actif au bas, dans l’ordre de réception. Les tableaux restent indépendants. Les largeurs des colonnes, la géométrie et le séparateur sont mémorisés. Les dates affichées et les nouvelles lignes TXT utilisent `JJ/MM/AAAA` ; les noms quotidiens restent `Belgique-AAAA-MM-JJ.txt` et les anciens TXT ne sont pas convertis.
+
+La jauge affiche le taux mesuré d’acceptation BCH/parité depuis la connexion, seulement pendant les transmissions récentes (expiration après trois secondes sans nouveaux mots). Ce n’est pas une estimation de couverture RF ou du taux de messages captés. Aucun RSSI/SNR ou état de synchronisation n’est inventé. Un avertissement technique signale moins de 256 Mio disponibles sur les volumes utilisés ; aucune purge automatique n’est lancée.
+
+Voir le [rapport 0.1.8](docs/QUALIFICATION-0.1.8.md) pour les preuves et limites.
 
 ## Correction SQLite 0.1.7
 
@@ -28,7 +40,7 @@ Les deux ON/OFF sont indépendants et également accessibles dans le menu Enregi
 Les nouvelles lignes ont uniquement ce format, en UTF-8 :
 
 ```text
-0146035 2026-11-05 13:00:00 Texte complet du message
+0146035 05/11/2026 13:00:00 Texte complet du message
 ```
 
 Capcode sur sept chiffres, date ISO, heure belge, message. Aucun UUID, fréquence, mode, vitesse, alias ou source SDR. Les retours de ligne incorporés sont représentés par `\n` et `\r` pour conserver une ligne par message. Les anciennes lignes ne sont pas converties, réécrites ou supprimées. Une destination identique n’est ajoutée qu’une fois pour un même message ; deux messages distincts au contenu identique restent deux lignes.
