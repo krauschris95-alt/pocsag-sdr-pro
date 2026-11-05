@@ -1,0 +1,14 @@
+{
+  "architecture": "Windows x64",
+  "qt": "6.8.3",
+  "compiler": "MinGW GCC 13.1",
+  "shared_desktop_implementation": true,
+  "sha256": {
+    "POCSAG-SDR-Pro.exe": "6a89a7f4ea5c9010d66d786c65c73a83bf690275283a68b75c9bcc71303fbe8c",
+    "libdesktop_window.a": "b68668b926d0a2f85f4706729e09aade5c486376bb4d463f6c86118f5e43167d",
+    "storage_regression_tests.exe": "3e6cc32b7dad8c8bd5f319ed707be070f809858a1f99885480ed9032112d8244",
+    "rtlsdr.dll": "7fa2ffe058f372475055e46d492311faf22fb49278e8f72cbc27d1440cf6ccdb",
+    "libSoapySDR.dll": "fb696cb32fde508200865a3e520691f9acc1ee2cd26daa279f303f8309dd1f11",
+    "sdr-modules/librtlsdrSupport.dll": "5e32c25510a75646d0915b9408c3335fcad27df3d7affe4ff766ae0d94bea7d3"
+  }
+}

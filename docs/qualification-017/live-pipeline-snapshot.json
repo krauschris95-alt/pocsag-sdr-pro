@@ -1,0 +1,9 @@
+{
+  "snapshot_utc": "2026-11-05T07:34:40Z",
+  "sqlite_messages": 288,
+  "pending_txt": 0,
+  "acknowledged_deliveries": 551,
+  "general_lines": 271,
+  "selected_lines": 280,
+  "isolated_database_read_only": true
+}

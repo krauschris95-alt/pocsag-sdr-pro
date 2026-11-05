@@ -18,6 +18,7 @@ public:
    for(int k=0;k<3;++k){if(selected_&&selected_!=bauds[k])continue;auto& c=clocks_[k];c.filtered+=.6*(value-c.filtered);bool sign=c.filtered>=0;if(sign!=c.previous){double error=c.phase<.5?c.phase:c.phase-1;c.phase-=error*.08;}c.previous=sign;c.sum+=c.filtered;c.phase+=bauds[k]/(rate_/5);if(c.phase>=1){c.phase-=1;decoders_[k]->bit(c.sum>=0);c.sum=0;}}
   }
  }
+ Decoder::Statistics statistics()const{Decoder::Statistics total;for(auto& d:decoders_){auto& s=d->statistics();total.preambles+=s.preambles;total.syncs+=s.syncs;total.words+=s.words;total.rejected+=s.rejected;total.correctedBits+=s.correctedBits;}return total;}
  void finish(){for(auto& d:decoders_)d->discard();}
  void reset(){for(auto& d:decoders_)d->reset();clocks_={};history_={};cursor_=decimation_=0;previous_={1,0};dc_=0;}
 private:

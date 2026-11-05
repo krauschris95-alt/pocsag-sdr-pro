@@ -1,3 +1,7 @@
+# Validation actuelle : 0.1.7
+
+Voir [qualification 0.1.7](QUALIFICATION-0.1.7.md). Les sections suivantes sont des rapports historiques.
+
 # Validation actuelle : 0.1.6
 
 Voir [qualification 0.1.6 et matrice des 30 essais](QUALIFICATION-0.1.6.md). Les sections ci-dessous sont des rapports historiques, avec leurs limites propres à chaque version.

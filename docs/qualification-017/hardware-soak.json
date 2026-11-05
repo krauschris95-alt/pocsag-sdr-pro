@@ -1,0 +1,53 @@
+{
+    "all_iq_live": true,
+    "all_table_rows": 460,
+    "decoder_frames": 5813,
+    "expected_general_lines": 443,
+    "expected_selected_lines": 452,
+    "frequency_hz": 169626000,
+    "general_lines": 443,
+    "iq_bytes": 661995520,
+    "isolated_auto_registration_for_test": true,
+    "journal_exact_bytes": true,
+    "measured_codewords": 16053,
+    "pending_messages": 0,
+    "pending_txt": 0,
+    "phases": [
+        {
+            "accepted_texts": 4,
+            "duration_seconds": 60,
+            "flags": 0,
+            "iq_live": true,
+            "tables_match_sqlite": true
+        },
+        {
+            "accepted_texts": 4,
+            "duration_seconds": 60,
+            "flags": 1,
+            "iq_live": true,
+            "tables_match_sqlite": true
+        },
+        {
+            "accepted_texts": 13,
+            "duration_seconds": 60,
+            "flags": 2,
+            "iq_live": true,
+            "tables_match_sqlite": true
+        },
+        {
+            "accepted_texts": 439,
+            "duration_seconds": 1200,
+            "flags": 3,
+            "iq_live": true,
+            "tables_match_sqlite": true
+        }
+    ],
+    "red_after_stop": true,
+    "rejected_codewords": 0,
+    "selected_lines": 452,
+    "selected_table_rows": 460,
+    "sqlite_lock_injections": 10,
+    "sqlite_messages": 460,
+    "sqlite_retries": 315,
+    "stale_iq_polls": 0
+}

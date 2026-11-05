@@ -9,22 +9,23 @@
 
 QString Window::dailyPath(QString root,QString name,QDateTime timestamp){
  const QString date=timestamp.toTimeZone(QTimeZone("Europe/Brussels")).date().toString(Qt::ISODate);
- return QDir(root).filePath(name+"/"+date+"/"+name+"-"+date+".txt");
+ return QDir(root).filePath(name+"-"+date+".txt");
 }
 QString Window::generalJournalPath(QDateTime timestamp)const{
- return daily_&&daily_->isChecked()?dailyPath(root_->text(),profileName_->text(),timestamp):logPath_->text();
+ return dailyPath(root_->text(),"Belgique",timestamp);
 }
 void Window::migrate(){
  auto column=[this](QString name,QString declaration){QSqlQuery q("PRAGMA table_info(capcodes)",db_);bool found=false;while(q.next())if(q.value(1).toString()==name)found=true;q.finish();if(!found)sql("ALTER TABLE capcodes ADD COLUMN "+name+" "+declaration);};
  if(!db_.transaction())throw std::runtime_error("Migration transaction failed");
  column("directory","TEXT DEFAULT ''");column("filename","TEXT DEFAULT ''");column("daily","INTEGER DEFAULT 0");column("interpretation","TEXT DEFAULT 'INHERIT'");column("retention_days","INTEGER DEFAULT 0");
  column("voice_enabled","INTEGER DEFAULT 0");column("pager_enabled","INTEGER DEFAULT 0");column("txt_enabled","INTEGER DEFAULT 1");
- sql("PRAGMA user_version=5");if(!db_.commit())throw std::runtime_error("Migration commit failed");
+ {QSqlQuery columns("PRAGMA table_info(messages)",db_);bool exists=false;while(columns.next())if(columns.value(1).toString()=="event_uid")exists=true;columns.finish();if(!exists)sql("ALTER TABLE messages ADD COLUMN event_uid TEXT");}sql("CREATE UNIQUE INDEX IF NOT EXISTS message_event_uid ON messages(event_uid) WHERE event_uid IS NOT NULL");
+ sql("PRAGMA user_version=6");if(!db_.commit())throw std::runtime_error("Migration commit failed");
 }
 void Window::saveOptions(){
  if(!allowTone_)return;
  QSettings s(settingsFile_,QSettings::IniFormat);
- s.setValue("types/ALPHA",allowAlpha_->isChecked());s.setValue("types/NUMERIC",allowNumeric_->isChecked());s.setValue("types/TONE",allowTone_->isChecked());s.setValue("types/DIAGNOSTIC",allowDiagnostic_->isChecked());
+ s.setValue("journals/generalEnabled",generalCopy_->isChecked());if(selectedLogging_){s.setValue("journals/selectedEnabled",selectedLogging_->isChecked());s.setValue("journals/selectedPath",selectedLogPath_->text());}s.setValue("types/ALPHA",allowAlpha_->isChecked());s.setValue("types/NUMERIC",allowNumeric_->isChecked());s.setValue("types/TONE",allowTone_->isChecked());s.setValue("types/DIAGNOSTIC",allowDiagnostic_->isChecked());
  s.setValue("interpretation",format_->currentText());s.setValue("stepHz",step_->currentData());s.setValue("daily",daily_->isChecked());s.setValue("root",root_->text());s.setValue("profile",profileName_->text());s.sync();
 }
 void Window::retune(){
@@ -37,6 +38,8 @@ void Window::retune(){
 }
 void Window::setupOptions(QAction* startAction,QAction* stopAction,QAction* openAction,QAction* capAction,QAction* logAction,QMenu* viewMenu,QMenu* helpMenu){
  QSettings s(settingsFile_,QSettings::IniFormat);
+ selectedLogging_=new QCheckBox(this);selectedLogging_->hide();selectedLogging_->setChecked(s.value("journals/selectedEnabled",false).toBool());selectedLogPath_=new QLineEdit(s.value("journals/selectedPath",QFileInfo(db_.databaseName()).absolutePath()+"/Interventions.txt").toString(),this);selectedLogPath_->hide();generalCopy_->setChecked(s.value("journals/generalEnabled",logging_->isChecked()&&generalCopy_->isChecked()).toBool());
+
  menuBar()->clear();auto file=menuBar()->addMenu("Fichier");file->addAction(openAction);file->addAction("Exporter tous les résultats…",this,[this]{exportTable(allView_);});file->addAction("Quitter",this,&QWidget::close);
  auto reception=menuBar()->addMenu("Réception");reception->addAction(startAction);reception->addAction(stopAction);reception->addAction("Actualiser les appareils",this,&Window::reloadDevices);
  auto rates=reception->addMenu("Débit POCSAG");auto group=new QActionGroup(this);group->setExclusive(true);for(QString rate:{"AUTO","512","1200","2400"}){auto a=rates->addAction(rate);a->setCheckable(true);a->setChecked(baud_->currentText()==rate);group->addAction(a);connect(a,&QAction::triggered,this,[this,rate]{baud_->setCurrentText(rate);});connect(baud_,&QComboBox::currentTextChanged,a,[a,rate](QString value){a->setChecked(value==rate);});}

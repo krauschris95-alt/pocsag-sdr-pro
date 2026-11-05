@@ -21,6 +21,8 @@
 #include <QTimer>
 #include <complex>
 #include <memory>
+#include <deque>
+#include <QJsonObject>
 class Spectrum:public QWidget {
  Q_OBJECT
 public:
@@ -62,5 +64,9 @@ private:
  std::vector<std::unique_ptr<Receiver>> extraRadios_;Receiver* selectedRadio_=nullptr;QMenu* sourcesMenu_=nullptr;
  void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();
  Receiver* addReceiver(RadioConfig config);void refreshSources();
+ std::deque<QJsonObject> pendingMessages_;QString pendingDirectory_;bool draining_=false;QTimer* ingestionTimer_=nullptr;
+ QCheckBox* selectedLogging_=nullptr;QLineEdit* selectedLogPath_=nullptr;QLabel* quality_=nullptr;
+ quint64 acceptedFrames_=0,persistedFrames_=0,sqliteRetries_=0;QString lastStorageError_;
+ void initIngestion();void pumpMessages();bool storePending(const QJsonObject& value);void storageProblem(QString text);
  void soapyOptions();
 };

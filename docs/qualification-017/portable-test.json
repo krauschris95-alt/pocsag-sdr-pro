@@ -1,0 +1,7 @@
+{
+  "startup_exit": 0,
+  "path_only_windows": true,
+  "isolated_screenshot_mode": true,
+  "private_data_packaged": false,
+  "payload_sha256": "6A89A7F4EA5C9010D66D786C65C73A83BF690275283A68B75C9BCC71303FBE8C"
+}

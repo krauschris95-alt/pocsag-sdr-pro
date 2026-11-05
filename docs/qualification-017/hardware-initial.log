@@ -1,0 +1,4 @@
+phase=0 elapsed=60 iq_bytes=28229632 decoded=62 stored=4 pending=0
+phase=1 elapsed=60 iq_bytes=57065472 decoded=135 stored=8 pending=0
+phase=2 elapsed=60 iq_bytes=85884928 decoded=256 stored=17 pending=0
+phase=3 elapsed=60 iq_bytes=114720768 decoded=465 stored=33 pending=0

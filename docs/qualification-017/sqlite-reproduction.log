@@ -1,0 +1,3 @@
+Rows fetched in persistent cursor: 256
+TXT writer=1 receiving insert=0 error=database is locked Unable to fetch row native=517
+After cursor released: 1

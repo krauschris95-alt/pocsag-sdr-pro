@@ -1,138 +1,91 @@
-# POCSAG SDR Pro — 0.1.6
+# POCSAG SDR Pro — 0.1.7
 
-Application Windows x64 C++20 / Qt 6 / SQLite, réception RTL-SDR et backend HackRF intégrés, sans télémétrie ni transmission automatique des messages. Préversion en qualification, projet indépendant.
+Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
-## Installation et réception
+## Installation
 
-Télécharger le ZIP portable ou l’installateur par utilisateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases), extraire puis ouvrir `POCSAG-SDR-Pro.exe`. Qt, SQLite et RTL-SDR Blog V1.4.0 x64 sont inclus. Installer WinUSB pour le bon récepteur avec Zadig si nécessaire. La bibliothèque prend en charge V3/V4 ; seul le récepteur générique présent a été testé.
+Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
-Choisir le SDR, la fréquence (169,626000 MHz sur le poste testé), le gain et les PPM, puis Démarrer. Fermer les applications occupant le même dongle. Réception : un canal centré, taux IQ réglable, débits AUTO/512/1200/2400.
+La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
 
-Les changements de fréquence/gain/PPM/débit en direct redémarrent explicitement la chaîne SDR, avec une courte interruption possible. Le pas est réglable à 1, 2,5, 5, 6,25, 8,33, 10, 12,5, 25, 50 et 100 kHz, ou personnalisé en Hz. Boutons, flèches clavier et molette utilisent ce pas. La saisie directe se valide par Entrée ou perte de focus ; le pilote reçoit des Hz entiers arrondis.
+## Correction SQLite 0.1.7
 
-Le repère rouge indique le centre accordé sur le spectre ET le waterfall, y compris au zoom. L'ancien spectre est effacé lors d'un changement de fréquence.
+Cause reproduite : les curseurs persistants des anciens tableaux conservaient une vue WAL pendant les écritures du thread TXT. Une insertion de réception pouvait ensuite échouer avec **SQLITE_BUSY_SNAPSHOT 517**, affiché comme `database is locked Unable to fetch row`. Le code précédent abandonnait le message après cet échec.
 
-## Décodage et filtres
+Les tableaux utilisent maintenant des lectures courtes et des pages libérées après chaque requête. Les transactions de réception commencent par `BEGIN IMMEDIATE`. Un message est placé dans une file locale atomique **avant** son insertion ; un verrou temporaire diffère son traitement et déclenche une reprise contrôlée. Un identifiant interne unique empêche de réinsérer le même message après redémarrage.
 
-Les bits de fonction ne déterminent plus universellement le type de texte. Outils → Options → Interprétation des données :
+`incoming-pending/` contient les messages en attente ; `journal-receipts/` contient les positions d’écriture servant à reprendre les TXT sans doublons. Ces fichiers sont locaux et peuvent contenir des données privées ; ne pas les supprimer pendant une reprise. Les identifiants techniques restent internes et n’apparaissent pas dans les nouveaux TXT. Une panne disque peut empêcher la persistance ; elle est signalée et les messages encore en mémoire ne bénéficient alors pas d’une garantie après arrêt brutal.
 
-- ALPHA : choix initial explicite, indépendant de la fonction.
-- NUMERIC : chiffres et symboles POCSAG, dont `. U - ] [`.
-- AUTO : mode conservateur ; une interprétation ambiguë reste diagnostique, sans texte inventé.
+## Deux journaux TXT indépendants
 
-Chaque capcode peut surcharger ce mode ; INHERIT utilise le choix global. Les contrôles non pris en charge ne sont pas simplement supprimés : le contenu est classé diagnostic et représenté avec des balises hexadécimales. Une trame BCH correcte peut transporter un contenu binaire ou un codage non pris en charge. Aucun déchiffrement ou récupération universelle des signaux dégradés n'est promis.
+Ouvrir **Enregistrements → Journal** :
 
-Filtres → Types de messages propose ALPHA et NUMERIC activés, TONE ONLY désactivé, diagnostics désactivés. ALPHA et NUMERIC filtrent uniquement l’affichage : SQLite et les TXT conservent ces textes. Le refus TONE et diagnostics agit avant SQLite et TXT. Les anciens TONE sont conservés dans la base migrée mais masqués ; les anciennes écritures en attente de types désormais désactivés sont annulées. Le compteur des messages texte exclut TONE et diagnostics. Les choix persistent et sont modifiables pendant la réception.
+1. **Tous les messages — Toute la Belgique** : choisir le dossier principal, puis activer ON. Un fichier `Belgique-AAAA-MM-JJ.txt` est créé dans ce dossier pour chaque date civile belge. La date dépend d’Europe/Brussels, y compris les changements été/hiver. Le changement de jour n’arrête pas le SDR ; une reprise conserve le jour attribué à la réception.
+2. **Capcodes enregistrés** : choisir directement un fichier permanent, par exemple `D:/POCSAG/Interventions.txt`, puis activer ON. Seuls les capcodes enregistrés, actifs et cochés **Journal TXT** y sont ajoutés. Aucun fichier quotidien n’est créé pour cette destination.
 
-Les menus Fichier, Récepteur, Capcodes, Enregistrements, Outils, Affichage et Aide agissent sur les fonctions réelles. Les tableaux conservent tri, recherche, copie, export CSV et ouverture du texte complet par double-clic. Le panneau inférieur contient exclusivement les messages des capcodes actifs choisis pour cet affichage.
+Les deux ON/OFF sont indépendants et également accessibles dans le menu Enregistrements. Les chemins persistent après redémarrage. Parcourir utilise les dialogues Windows ; Ouvrir lance le dossier ou le fichier. Les nouveaux fichiers sont créés sans effacement des anciens contenus.
 
-## Toute la Belgique : journaux quotidiens
-
-Activer Enregistrement TXT. Dans Enregistrements, choisir le dossier principal avec Parcourir, le nom de profil (Belgique par défaut) et le classement quotidien. Exemple : racine `D:\Radio\POCSAG`, profil `Belgique` :
+Les nouvelles lignes ont uniquement ce format, en UTF-8 :
 
 ```text
-D:\Radio\POCSAG\Belgique\2026-11-04\Belgique-2026-11-04.txt
-D:\Radio\POCSAG\Belgique\2026-11-05\Belgique-2026-11-05.txt
+0146035 2026-11-05 13:00:00 Texte complet du message
 ```
 
-La date civile est celle d'Europe/Brussels, avec changements été/hiver, indépendamment du fuseau Windows. Les dossiers intermédiaires sont créés automatiquement. La destination est fixée à la réception avant la mise en file SQLite : une écriture reprise le lendemain conserve le bon jour. Le passage à minuit n'arrête pas la réception. Le chemin actif se consulte dans Enregistrements ; Ouvrir le dossier actif lance l'Explorateur Windows.
+Capcode sur sept chiffres, date ISO, heure belge, message. Aucun UUID, fréquence, mode, vitesse, alias ou source SDR. Les retours de ligne incorporés sont représentés par `\n` et `\r` pour conserver une ligne par message. Les anciennes lignes ne sont pas converties, réécrites ou supprimées. Une destination identique n’est ajoutée qu’une fois pour un même message ; deux messages distincts au contenu identique restent deux lignes.
 
-« Toute la Belgique » est un nom de flux configurable, sans garantie de provenance géographique ni de couverture nationale. Le mode permanent et les profils supplémentaires existants restent disponibles.
+Les anciennes configurations de chemins individuels et profils sont conservées en base mais ne dirigent plus les nouveaux messages : les deux destinations ci-dessus les remplacent. Les anciennes écritures déjà en attente restent dans la file avec leur destination et leur contenu d’origine. Le classement des versions antérieures par sous-dossiers datés reste intact sur disque ; les nouveaux fichiers quotidiens sont créés directement dans le dossier maintenant choisi.
 
-## Capcodes : dossiers indépendants
+## Tableaux et historique
 
-Capcodes permet de régler adresse (0–2097151, sept chiffres affichés), alias, couleur, Actif, En bas et interprétation. Pour chaque ligne, Parcourir choisit le dossier Windows ; Nom fichier TXT personnalise le nom (vide : adresse.txt). Quotidien crée des sous-dossiers datés dans ce dossier avec un fichier `nom-AAAA-MM-JJ.txt`.
+Disposition PDW conservée : thème bleu/noir, deux tableaux superposés, séparation initiale 60/40 déplaçable et mémorisée, défilements indépendants. Fréquence sélectionnée en cyan en haut à droite ; spectre/waterfall dans leur onglet séparé. Aucun compteur de messages dans l’interface principale.
 
-Deux capcodes peuvent partager un fichier. Le chemin TXT hérité de 0.1.1 est utilisé si aucun dossier dédié n'est défini. L'import JSON accepte aussi l'ancien format. Enregistrer les modifications du dialogue.
+**Ordre initial : anciens en haut, nouveaux en bas.** Le suivi automatique accompagne les nouvelles lignes seulement si le tableau était déjà en bas. Remonter pour lire l’historique suspend ce suivi ; revenir en bas le rétablit. Affichage permet aussi de le désactiver. Recherche, filtres, copie, export CSV, colonnes redimensionnables, tri volontaire et double-clic pour lire le texte intégral restent disponibles.
 
-Copie journal général conserve la copie générale en plus du fichier spécifique. Écriture en ajout UTF-8, sans effacement, via file SQLite persistante et verrou par fichier. Une même destination n'est ajoutée qu'une fois par message. Les erreurs sont affichées et réessayées toutes les dix secondes.
+Aucun plafond applicatif du nombre de messages et aucune suppression automatique. La conservation dépend du stockage disponible. Les pages d’affichage sont chargées à la demande et le cache est borné à 4096 lignes par tableau ; cette borne concerne uniquement le cache, jamais l’historique SQLite accessible. Les anciennes options de conservation ne déclenchent aucune purge à la réception ; la purge manuelle exige toujours une confirmation explicite.
 
-Historique (jours) règle la conservation SQLite par capcode (0 : illimitée). Appliquer la conservation enregistrée demande confirmation avant purge. Cette purge est manuelle et ne supprime jamais les TXT.
+Le tableau supérieur affiche tous les messages acceptés sous réserve des filtres d’affichage. Le tableau inférieur affiche les capcodes actifs cochés **En bas**. Affichage bas, Journal TXT, Voix et préparation Pager sont indépendants. La fréquence est conservée dans SQLite et dans le tableau supérieur ; la colonne Source est optionnelle, sans ajout au TXT compact.
 
-## Données, migration, mode hors ligne
+## Réception, décodage et qualité
 
-La base existante `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/pocsag.db` est conservée. Migration transactionnelle par ajout des colonnes manquantes. Filtres, dossiers, mode et pas sont dans `preferences.ini` à côté de la base.
+Choisir le SDR et la fréquence réellement utilisée (169,626000 MHz sur le poste de qualification), puis Démarrer. Le voyant vert dépend d’IQ récents ; il reste rouge à l’arrêt ou sans flux. Il ne prouve pas qu’un signal POCSAG est présent.
 
-Ouvrir IQ accepte du CU8 : I/Q non signés 8 bits, 240000 échantillons complexes/s, canal centré. Indiquer la fréquence avant ouverture pour les métadonnées ; un fichier brut ne les contient pas. Les captures privées ne sont jamais publiées automatiquement.
+**Qualité BCH** = proportion des mots POCSAG reçus acceptés après correction BCH et contrôle de parité. Aucun pourcentage n’est affiché sans mesure exploitable. Ce n’est ni un SNR ni une estimation des messages manqués ou de la couverture radio.
 
-## Compilation et validation
+Débits AUTO/512/1200/2400, interprétation ALPHA/NUMERIC/AUTO globale et surcharge par capcode. Les fonctions 1 à 4 ne déterminent pas universellement le type de texte. ALPHA est le choix initial ; AUTO conserve les ambiguïtés comme diagnostics. TONE ONLY et diagnostics sont désactivés avant historique/TXT par défaut. Les filtres ALPHA/NUMERIC restent des filtres d’affichage. ASCII 7 bits pris en charge, sans promesse de déchiffrement ou de récupération universelle.
 
-Avec Qt 6.8.3 / MSVC 2022 x64 :
+Le pas de fréquence agit sur les flèches, boutons et molette : 1, 2,5, 5, 6,25, 8,33, 10, 12,5, 25, 50 et 100 kHz, ou pas personnalisé en Hz. Un réaccord peut redémarrer brièvement la chaîne. FFT réelle, waterfall, marqueur rouge, zoom, contraste, vitesse, sélection à la souris et bande du canal sont conservés.
+
+Le journal `technical.log` distingue l’activité IQ, les trames du décodeur, les insertions SQLite, la file de réception et les deux modèles. Les compteurs de diagnostic restent dans ce fichier, sans surcharger la fenêtre. Les erreurs TXT sont réessayées et n’arrêtent pas le décodeur ; la file SQLite reste persistante.
+
+## Voix et matériel
+
+SAPI Windows local : alias annoncé avant le message, choix de voix et sortie, volume, vitesse, ON/OFF général et par capcode, file ordonnée, test, relecture et arrêt. Une panne vocale ne doit pas interrompre le SDR ou les TXT.
+
+RTL-SDR Blog V1.4.0 natif, SoapySDR 0.8.1 + SoapyRTL 0.3.3 et bibliothèque native HackRF distribués. Le RTL OEM présent avec tuner R828D est le matériel réellement disponible pour qualification. V3/V4 spécifiques et autres tuners ne sont pas tous qualifiés. HackRF est intégré mais non essayé physiquement.
+
+Airspy/HF+, SDRplay, Lime, bladeRF, Pluto, USRP et Funcube nécessitent des modules/pilotes supplémentaires x64 compatibles avec l’ABI Soapy 0.8 et la chaîne MinGW ; ils ne sont pas inclus et ne sont pas déclarés testés. SoapySDR n’est pas une garantie universelle. `SOAPY_SDR_PLUGIN_PATH` et `POCSAG_SOAPY_LIBRARY` permettent des modules/bibliothèques compatibles de confiance.
+
+Plusieurs sources ont leurs paramètres et décodeurs indépendants. Récepteur → Source du spectre choisit celle représentée ; les autres continuent. Arrêter coupe toutes les sources, Démarrer concerne le principal. Ne pas ouvrir le même appareil à la fois par deux adaptateurs. Deux lectures IQ simultanées sont testées ; deux appareils physiques restent à qualifier.
+
+Limites : fréquence stockée sur 32 bits, maximum 4294,967295 MHz ; Soapy 120 kéch/s à 20 Méch/s selon pilote/CPU/USB, conversion CF32 vers le CU8 du moteur. Un module natif bloquant peut retarder l’arrêt. Diagnostic CPU x86-64/SSE2/AVX matériel disponible ; aucune instruction AVX obligatoire.
+
+PrivateRadio reste une préparation hors ligne : préférences persistées et contrat de message, aucun transport, serveur, authentification ou relais actif. Aucun texte radio n’est envoyé au cloud.
+
+## Compilation et preuves
+
+Qt 6.8.3 / MinGW 13.1 x64, CMake, Ninja :
 
 ```powershell
-cmake -S . -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64 -A x64
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-cmake --install build --config Release --prefix dist/POCSAG-SDR-Pro
+cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 2
+ctest --test-dir build --output-on-failure
+cmake --install build --prefix dist/POCSAG-SDR-Pro
 windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
 ./scripts/package.ps1
-```
-
-GitHub Actions utilise MinGW x64 et inclut ses DLL pour un ZIP portable. Les tags `v*` publient une préversion après tests. Moteur seul : `-DBUILD_GUI=OFF`.
-
-Voir [validation](docs/VALIDATION.md), [notes 0.1.5](docs/RELEASE-0.1.5.md), [licences](docs/THIRD_PARTY.md). Code original GPL-3.0-or-later.
-
-Pour 0.1.2, le budget Actions bloque les jobs : le ZIP est construit et testé localement puis publié dans GitHub Releases. La CI devra être relancée après rétablissement du budget.
-
-
-## Interface et voix 0.1.3
-
-Deux onglets : **Messages** et **Spectre / Waterfall**. Le séparateur des deux tableaux et les dimensions sont mémorisés. En haut figurent tous les textes acceptés, indépendamment des capcodes enregistrés ; en bas uniquement les capcodes actifs avec En bas coché. Outils propose une recherche avancée par capcode, alias, texte, fréquence, date belge, débit et type, sans modifier les journaux.
-
-Dans Capcodes, cocher Voix pour les adresses à lire. Dans Outils → Synthèse vocale Windows, activer l'interrupteur général (initialement OFF), choisir voix/sortie, volume, vitesse et limite de file. L'alias précède le texte complet avec une pause naturelle. Les voix installées sont utilisées hors ligne ; une voix française est préférée. Test, Arrêter et Relire le message sont disponibles. La file FIFO ne superpose pas les lectures ; choisir de refuser le nouveau message ou retirer le plus ancien en attente lorsqu'elle est pleine. Historique et TXT restent indépendants.
-
-Récepteur → Paramètres matériels règle taux IQ, AGC RTL, bande tuner, filtre canal DSP et squelch. HackRF propose LNA/VGA manuels et taux 2–20 Méch/s ; ce backend compilé reste à qualifier sur appareil réel. Le watchdog RTL interrompt un flux sans IQ depuis trois secondes et réessaie le même numéro de série toutes les trois secondes. Deux dongles de même série ne sont pas distinguables : utiliser des séries uniques.
-
-Le second onglet affiche la FFT réelle et le waterfall : axes MHz, zoom, échelle dBFS, bande du canal, contraste et cadence. Cliquer accorde le récepteur. Le démarrage automatique de réception et le lancement Windows sont facultatifs, désactivés initialement. Les erreurs sont consignées dans technical.log sans boîte modale pendant la réception.
-
-Cette préversion n'est pas qualifiée H24. La récupération après débranchement physique et le HackRF restent à vérifier sur matériel. Les données utilisateur persistent localement et ne sont pas incorporées au ZIP.
-
-
-## Disposition compacte 0.1.4
-
-Une barre de menus, une petite barre à icônes et la fréquence cyan à droite. Messages contient deux tableaux pleine largeur, avec partage initial 60/40 et séparateur horizontal mémorisé. Les réglages de réception sont dans Récepteur ; les dossiers, profils et interrupteurs TXT dans Enregistrements ; le pas dans Récepteur ; le zoom et les réglages du spectre dans Affichage. Les barres de recherche ne prennent plus de place : clic droit dans chaque tableau pour rechercher, copier, exporter ou relire. Double-clic pour consulter le message complet. Le spectre occupe exclusivement le second onglet.
-
-
-## Correctif urgent 0.1.5
-
-Save des capcodes initialise et vérifie la cellule Voix. Une transaction SQLite conserve ensemble adresse, alias, affichage, voix et destinations ; capcodes-backup.json sauvegarde atomiquement la configuration précédente. Les erreurs de validation ou de chemin conservent le dialogue ouvert et la saisie. Dossier dédié ou fichier TXT direct : champs modifiables, Parcourir et Ouvrir dossier ; les dossiers et fichiers absents sont créés sans effacer les TXT existants. Les réglages individuels prennent effet après Save.
-
-Le voyant supérieur SDR ACTIF vert dépend de l’arrivée récente des IQ matériels, pas du nombre de messages. Après 1,5 seconde sans IQ, à l’arrêt ou hors ligne, il est rouge SDR INACTIF. Les journaux techniques et exceptions sont locaux, à côté de la base et des préférences. La disposition 0.1.4 est conservée.
-
-
-## Nouveautés 0.1.6 et portée matérielle
-
-Le correctif Save de 0.1.5 est conservé (cellule Voix manquante reproduite puis corrigée, transaction SQLite et sauvegarde précédente atomique). Les préférences par capcode comprennent maintenant **Journal TXT**, **Voix**, **En bas** et **Pager PrivateRadio (préparation)**. Journal TXT désactive uniquement le fichier propre à ce capcode ; la copie générale et les profils supplémentaires ont leurs propres interrupteurs. Ouvrir TXT et Ouvrir dossier restent dans la gestion des capcodes.
-
-Récepteur → Récepteurs supplémentaires permet de mémoriser puis démarrer des sources indépendantes. Chaque source a son thread, sa fréquence, ses gains et son décodeur. La liste Source du spectre sélectionne les IQ représentés et la fréquence cyan ; les autres sources continuent. Arrêter coupe toutes les sources. Le bouton Démarrer concerne le principal. Les configurations supplémentaires sont mémorisées, sans démarrage automatique. Éviter de sélectionner le même appareil physique à la fois via RTL natif et Soapy. La limite logicielle est de huit sources supplémentaires ; ce nombre ne constitue pas une capacité matérielle garantie.
-
-Le tableau supérieur ajoute Fréquence ; Affichage permet de montrer Source. Les TXT contiennent également la fréquence et l’identité de la source. Le panneau inférieur conserve les messages des capcodes sélectionnés.
-
-**Adaptateur SoapySDR 0.8** séparé du moteur, avec cœur 0.8.1 et module RTL 0.3.3 fournis. Les capacités RX sont interrogées auprès du pilote : gain, AGC, PPM, taux IQ, bande et antenne. Les options absentes sont désactivées. Les modules supplémentaires x64 compatibles avec la même ABI et la chaîne MinGW peuvent être ajoutés à `sdr-modules` ; leurs DLL, pilotes et éventuels services constructeur restent nécessaires. `SOAPY_SDR_PLUGIN_PATH` permet un autre dossier ; `POCSAG_SOAPY_LIBRARY` permet une autre bibliothèque compatible. Ne charger que des modules de confiance, qui exécutent du code natif.
-
-| Famille | Distribution / qualification |
-|---|---|
-| RTL-SDR | Natif Blog V1.4.0 + SoapyRTL inclus. Récepteur OEM testé en 0.1.6 : nouvelle DLL native 60 s avec Save/TXT, voie Soapy 5 min sans erreur remontée. V3/V4 spécifiques non testés. |
-| HackRF | Bibliothèque native incluse ; pas de matériel disponible pour qualification. |
-| Airspy / HF+, SDRplay, Lime, bladeRF, Pluto, USRP, Funcube | Extension possible par modules appropriés, **non inclus et non testés**. Aucune reconnaissance ou réception garantie. |
-
-Limites actuelles : fréquences stockées en Hz sur 32 bits (maximum 4294,967295 MHz) ; voie Soapy 120 kéch/s à 20 Méch/s, sous réserve des capacités réelles. CF32 est converti vers le CU8 du moteur existant ; la pleine dynamique des ADC supérieurs à 8 bits n’est pas conservée. Les taux élevés et plusieurs SDR exigent davantage de CPU/USB ; surveiller les pertes et réduire la charge. Un module qui bloque son appel natif reste une limite de cette architecture.
-
-Outils → diagnostic CPU/SDR indique architecture, threads logiques, SSE2 et présence matérielle AVX. Le chemin de traitement reste portable x86-64 ; aucune instruction AVX obligatoire ni accélération AVX non vérifiée. Poste réellement disponible : Windows 11 Pro x64 / Intel i7-8550U. Windows 10, AMD, autres éditions et endurance H24 restent à qualifier. Voir [rapport et matrice des 30 essais](docs/QUALIFICATION-0.1.6.md).
-
-L’installateur NSIS installe sans droits administrateur dans `%LOCALAPPDATA%/Programs/POCSAG SDR Pro`. Sa désinstallation retire les fichiers distribués et conserve les données/configurations et les journaux utilisateur. Réception, SQLite, TXT et voix SAPI fonctionnent localement ; aucun outil Python ou Visual Studio n’est requis pour utiliser le paquet. Le pilote USB du matériel reste une installation distincte. Les exécutables ne sont pas signés.
-
-**PrivateRadio est une préparation hors ligne uniquement** : interrupteurs indépendants persistés et contrat de message avec identité unique et alias avant texte. Aucun transport, authentification, serveur, relais vocal distant ou appel cloud n’est actif. L’intégration devra être validée séparément avant son activation.
-
-Construction de la distribution étendue (MinGW x64, Python uniquement sur le poste de compilation) après `package.ps1` et `package_hackrf.py` :
-
-```powershell
 python -m pip install backports.zstd
+python scripts/package_hackrf.py dist/POCSAG-SDR-Pro hackrf-cache
 python scripts/build_sdr_modules.py
-python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.6
+python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.exe 0.1.7
 ```
 
-Les archives tierces sont épinglées par SHA256 et leurs sources/licences accompagnent le paquet. GitHub Actions définit compilation, tests, ZIP et installateur ; un épuisement du budget du compte peut empêcher le job de démarrer. Un paquet construit localement est alors explicitement identifié comme tel.
-
-
-Complément de qualification après libération de la clé : voie RTL native 60 s / 18 textes avec Save et TXT, SoapyRTL 300 s / 65 textes, puis capture Soapy distincte de 60 s avec 3/3 textes exacts face à multimon-ng. Les binaires téléchargés restent identiques ; consulter le rapport actuel et les notes de Release pour ces résultats postérieurs à la construction du ZIP. Les captures et textes réels ne sont pas distribués.
+Lire [la qualification 0.1.7](docs/QUALIFICATION-0.1.7.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.

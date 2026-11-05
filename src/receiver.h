@@ -17,8 +17,9 @@ public:
  std::atomic_bool stopping{false};
  static QStringList devices();
  static QVector<RadioDevice> deviceInfos();
- void start(Priority priority=InheritPriority){stopping=false;lastLiveIq_=0;QThread::start(priority);}
+ void start(Priority priority=InheritPriority){stopping=false;lastLiveIq_=0;iqBytes_=decodedFrames_=words_=rejected_=0;QThread::start(priority);}
  bool hasLiveIq()const;
+ quint64 iqBytes()const{return iqBytes_;}quint64 decodedFrames()const{return decodedFrames_;}quint64 measuredWords()const{return words_;}quint64 rejectedWords()const{return rejected_;}
  void stop();
  ~Receiver(){stop();}
 signals:
@@ -31,6 +32,6 @@ signals:
 protected:
  void run() override;
 private:
- std::atomic<long long> lastLiveIq_{0};
+ std::atomic<long long> lastLiveIq_{0};std::atomic<quint64> iqBytes_{0},decodedFrames_{0},words_{0},rejected_{0};
  QMutex deviceMutex_;void* activeDevice_=nullptr;int(*cancelAsync_)(void*)=nullptr;
 };
