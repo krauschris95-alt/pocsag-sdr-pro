@@ -14,6 +14,8 @@ Compilation locale Windows x64 Release réussie. CTest : 5/5, zéro échec, 11,5
 
 Paquet 0.1.4 : nouvel essai RTL réel de 15 secondes à 169626000 Hz / 240000 éch/s, PATH limité à Windows, code de sortie 0, deux textes décodés et aucune erreur signalée. Compteurs uniquement dans portable-validation-0.1.4.json, aucun texte radio privé conservé dans le dépôt.
 
+ZIP extrait dans build-portable-014 : démarrage autonome et capture réussis, code de sortie 0. Le workflow 0.1.4 [41938307011](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/41938307011) reste bloqué avant démarrage par le budget Actions du compte. Livraison compilée/testée localement, aucun succès CI revendiqué.
+
 # Validation 0.1.3 — cahier des charges officiel
 
 ## Compilation et automatisation

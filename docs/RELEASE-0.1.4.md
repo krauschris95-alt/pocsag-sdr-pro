@@ -9,3 +9,5 @@ Les tableaux ont un fond noir, un texte cyan, dates/heures violettes et mode/vit
 Le spectre et le waterfall occupent leur propre onglet. Aucun changement du décodeur, du DSP, du pilote SDR, du worker TXT ou du service vocal. La gestion des capcodes, le TTS individuel, les journaux quotidiens et l'historique restent disponibles.
 
 Voir VALIDATION.md pour les essais de disposition et de non-régression ainsi que les limites de qualification matérielle héritées de 0.1.3.
+
+Validation locale Windows x64 : cinq suites CTest réussies (11,56 s), intégration Windows native réussie, réception RTL réelle de 15 secondes à 169,626000 MHz (deux textes, aucune erreur). ZIP extrait et démarrage sans Qt/MinGW de développement réussis. GitHub Actions reste bloqué avant démarrage par le budget du compte (run 41938307011) ; le ZIP est compilé et testé localement.
