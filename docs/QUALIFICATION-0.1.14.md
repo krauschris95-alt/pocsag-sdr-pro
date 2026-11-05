@@ -24,3 +24,10 @@ Le test de reprise utilise le rafraîchissement différé de production (150 ms)
 Le test matériel utilise une base, des TXT et des capcodes temporaires ; aucun fichier utilisateur n’est déplacé, effacé ou réinitialisé. La validation matérielle porte sur le chemin corrigé de restauration du tri ; les dernières modifications synchronisent uniquement la coche du menu et renforcent la même remise en ordre. Le moteur SDR/POCSAG est inchangé.
 
 Un avertissement pilote « PLL not locked » apparaît à l’initialisation, mais la réception et tous les contrôles ci-dessus réussissent ; ne pas interpréter ce seul avertissement comme une perte de flux prolongée.
+
+
+## Distribution
+
+ZIP extrait dans un dossier neuf et lancé avec PATH limité à Windows : succès, données temporaires. Installateur testé dans un dossier isolé, comparaison SHA-256 de tous les fichiers installés, démarrage puis désinstallation avec conservation du TXT témoin : succès. Rapports JSON et empreintes des deux binaires dans qualification-0114/.
+
+Compilation Windows x64 locale. GitHub Actions, run 42108992692 sur e9ebe9a, bloqué avant lancement du travail par le budget Actions : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions ; aucune modification de facturation. La préversion fournit les binaires compilés et testés localement.
