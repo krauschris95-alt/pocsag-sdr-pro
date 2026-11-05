@@ -59,4 +59,8 @@ private:
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
  void reloadDevices();void storePreferences();QStringList disabledTypes()const;
  QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();
+ std::vector<std::unique_ptr<Receiver>> extraRadios_;Receiver* selectedRadio_=nullptr;QMenu* sourcesMenu_=nullptr;
+ void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();
+ Receiver* addReceiver(RadioConfig config);void refreshSources();
+ void soapyOptions();
 };

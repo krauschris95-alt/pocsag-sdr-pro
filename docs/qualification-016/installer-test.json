@@ -1,0 +1,6 @@
+{
+  "installer_exit": 0,
+  "startup_exit": 0,
+  "exe_exists": true,
+  "uninstaller_exists": true
+}

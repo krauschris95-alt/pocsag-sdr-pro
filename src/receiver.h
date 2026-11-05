@@ -7,7 +7,7 @@
 #include <QMutex>
 #include "decoder.h"
 Q_DECLARE_METATYPE(pocsag::Message)
-struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; QString capture;QString deviceKey;bool automaticGain=false;quint32 bandwidth=0;bool reconnect=true;int vgaGain=20;quint32 channelBandwidth=21000;double squelch=-160; };
+struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; QString capture;QString deviceKey;bool automaticGain=false;quint32 bandwidth=0;bool reconnect=true;int vgaGain=20;quint32 channelBandwidth=21000;double squelch=-160;QString antenna;QString label; };
 struct RadioDevice {QString name,key;};
 class Receiver:public QThread {
  Q_OBJECT

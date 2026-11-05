@@ -1,3 +1,7 @@
+# Validation actuelle : 0.1.6
+
+Voir [qualification 0.1.6 et matrice des 30 essais](QUALIFICATION-0.1.6.md). Les sections ci-dessous sont des rapports historiques, avec leurs limites propres à chaque version.
+
 # Validation 0.1.5 — Save capcodes et état SDR
 
 ## Plantage reproduit puis corrigé

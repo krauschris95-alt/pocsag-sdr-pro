@@ -18,8 +18,8 @@ void Window::migrate(){
  auto column=[this](QString name,QString declaration){QSqlQuery q("PRAGMA table_info(capcodes)",db_);bool found=false;while(q.next())if(q.value(1).toString()==name)found=true;q.finish();if(!found)sql("ALTER TABLE capcodes ADD COLUMN "+name+" "+declaration);};
  if(!db_.transaction())throw std::runtime_error("Migration transaction failed");
  column("directory","TEXT DEFAULT ''");column("filename","TEXT DEFAULT ''");column("daily","INTEGER DEFAULT 0");column("interpretation","TEXT DEFAULT 'INHERIT'");column("retention_days","INTEGER DEFAULT 0");
- column("voice_enabled","INTEGER DEFAULT 0");
- sql("PRAGMA user_version=3");if(!db_.commit())throw std::runtime_error("Migration commit failed");
+ column("voice_enabled","INTEGER DEFAULT 0");column("pager_enabled","INTEGER DEFAULT 0");column("txt_enabled","INTEGER DEFAULT 1");
+ sql("PRAGMA user_version=5");if(!db_.commit())throw std::runtime_error("Migration commit failed");
 }
 void Window::saveOptions(){
  if(!allowTone_)return;
@@ -28,7 +28,7 @@ void Window::saveOptions(){
  s.setValue("interpretation",format_->currentText());s.setValue("stepHz",step_->currentData());s.setValue("daily",daily_->isChecked());s.setValue("root",root_->text());s.setValue("profile",profileName_->text());s.sync();
 }
 void Window::retune(){
- spectrum_->tuneFrequency(quint64(std::llround(frequency_->value()*1e6)));
+ if(!selectedRadio_||selectedRadio_==&radio_)spectrum_->tuneFrequency(quint64(std::llround(frequency_->value()*1e6)));
  if(radio_.isRunning()&&radio_.config.file.isEmpty()){
   // Restart is explicit: flush/discard the old chain before assigning the new config.
   status_->setText("Réaccord : redémarrage de la chaîne SDR…");
@@ -40,7 +40,7 @@ void Window::setupOptions(QAction* startAction,QAction* stopAction,QAction* open
  menuBar()->clear();auto file=menuBar()->addMenu("Fichier");file->addAction(openAction);file->addAction("Exporter tous les résultats…",this,[this]{exportTable(allView_);});file->addAction("Quitter",this,&QWidget::close);
  auto reception=menuBar()->addMenu("Réception");reception->addAction(startAction);reception->addAction(stopAction);reception->addAction("Actualiser les appareils",this,&Window::reloadDevices);
  auto rates=reception->addMenu("Débit POCSAG");auto group=new QActionGroup(this);group->setExclusive(true);for(QString rate:{"AUTO","512","1200","2400"}){auto a=rates->addAction(rate);a->setCheckable(true);a->setChecked(baud_->currentText()==rate);group->addAction(a);connect(a,&QAction::triggered,this,[this,rate]{baud_->setCurrentText(rate);});connect(baud_,&QComboBox::currentTextChanged,a,[a,rate](QString value){a->setChecked(value==rate);});}
- auto options=menuBar()->addMenu("Options");options->addAction("Fréquence SDR…",this,[this]{bool ok;double f=QInputDialog::getDouble(this,"Fréquence","MHz",frequency_->value(),24,1766,6,&ok);if(ok)frequency_->setValue(f);});options->addAction("Gain SDR…",this,[this]{bool ok;double g=QInputDialog::getDouble(this,"Gain","dB (gain supporté le plus proche)",gain_->value(),0,50,1,&ok);if(ok)gain_->setValue(g);});options->addAction("Correction PPM…",this,[this]{bool ok;int p=QInputDialog::getInt(this,"Correction","PPM",ppm_->value(),-200,200,1,&ok);if(ok)ppm_->setValue(p);});
+ auto options=menuBar()->addMenu("Options");options->addAction("Fréquence SDR…",this,[this]{bool ok;double f=QInputDialog::getDouble(this,"Fréquence","MHz",frequency_->value(),.001,4294.967295,6,&ok);if(ok)frequency_->setValue(f);});options->addAction("Gain SDR…",this,[this]{bool ok;double g=QInputDialog::getDouble(this,"Gain","dB (gain supporté le plus proche)",gain_->value(),0,50,1,&ok);if(ok)gain_->setValue(g);});options->addAction("Correction PPM…",this,[this]{bool ok;int p=QInputDialog::getInt(this,"Correction","PPM",ppm_->value(),-200,200,1,&ok);if(ok)ppm_->setValue(p);});
  auto filters=menuBar()->addMenu("Filtres");auto types=filters->addMenu("Types de messages");
  auto typeAction=[&](QString title,QString key,bool initial){auto a=types->addAction(title);a->setCheckable(true);a->setChecked(s.value("types/"+key,initial).toBool());connect(a,&QAction::toggled,this,[this]{saveOptions();refresh();});return a;};
  allowAlpha_=typeAction("Alphanumériques","ALPHA",true);allowNumeric_=typeAction("Numériques","NUMERIC",true);allowTone_=typeAction("TONE ONLY","TONE",false);allowDiagnostic_=typeAction("Invalides / diagnostics","DIAGNOSTIC",false);

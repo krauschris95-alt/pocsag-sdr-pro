@@ -20,3 +20,8 @@ Le code original de cette application est fourni sous GPL version 3 ou ultérieu
 HackRF 2026.01.2 et libusb 1.0.30 : DLL MSYS2 MinGW x64 épinglées par SHA256 dans scripts/package_hackrf.py. Licences et métadonnées dans licenses/hackrf et licenses/libusb ; sources correspondantes dans sources/. Runtime libwinpthread déployé avec MinGW. Sources officielles : https://github.com/greatscottgadgets/hackrf et https://github.com/libusb/libusb. SAPI est un composant Windows existant, sans DLL vocale redistribuée.
 
 
+
+
+0.1.6 : les mêmes sources RTL-SDR Blog V1.4.0 sont recompilées avec MinGW et libusb 1.0.30, supprimant les dépendances VCRUNTIME140/MSVCR100 de l’ancienne DLL. Bibliothèque d’import C officielle utilisée pour le module SoapyRTL. Aucun changement de l’algorithme RTL. Reproduction et SHA256 : scripts/build_sdr_modules.py.
+SoapySDR 0.8.1 : Boost Software License 1.0, source https://github.com/pothosware/SoapySDR/tree/soapy-sdr-0.8.1 ; SoapyRTLSDR 0.3.3 : MIT, https://github.com/pothosware/SoapyRTLSDR/tree/soapy-rtl-sdr-0.3.3. Sources exactes dans sources/, licences dans licenses/. Les cinq en-têtes C officiels sont conservés dans third_party/SoapySDR avec leur licence. Aucun autre module constructeur redistribué.
+NSIS 3.12 : outil de construction de l’installateur, https://nsis.sourceforge.io/License ; compiler non requis sur le PC utilisateur. L’installateur généré contient l’application et ses notices. Les bibliothèques dynamiques restent remplaçables.
