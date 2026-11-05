@@ -7,3 +7,5 @@ Disques Windows accessibles et chemins réseau UNC acceptés. Validation de l’
 Rapport complet : docs/QUALIFICATION-0.1.9.md. Compilation locale Windows 11 x64 ; Windows 10, supports externes et partages autorisés non qualifiés matériellement. Fermer complètement l’ancienne application avant de lancer celle-ci. Données existantes conservées ; exécutables non signés.
 
 Validation : 8/8 suites réussies, deux destinations simultanées, choix existant/nouveau, ajout sans troncature, sauvegarde immédiate et redémarrage, seconde lettre de lecteur temporaire, erreurs sans repli et accès direct depuis Capcodes.
+
+GitHub Actions bloqué avant démarrage par le budget du compte (run 42019946766). Les exécutables distribués sont compilés et testés localement sous Windows 11.

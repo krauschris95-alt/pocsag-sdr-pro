@@ -29,3 +29,15 @@ L’accès depuis Capcodes est exercé : champ permanent focalisé, validation i
 Windows 11, Qt 6.8.3 / MinGW 13.1 x64. Aucun partage réseau autorisé ni support externe disponible pour une qualification matérielle dédiée ; seule l’erreur d’un UNC inaccessible est testée. Windows 10 non essayé. Aucune modification de droits, création de partage réseau ou inscription d’identifiants effectuée. Pas de nouvel essai RF dans cette correction de chemins ; les essais RTL prolongés 0.1.8 restent documentés séparément. Le logiciel utilise les accès accordés au compte Windows et signale les erreurs ; il ne garantit pas l’accès à un disque absent ou à un partage interdit.
 
 Captures natives avec données synthétiques uniquement. Aucun message radio, base utilisateur ou TXT utilisateur distribué.
+
+## Compilation et provenance
+
+Application Windows x64 compilée localement avec Qt 6.8.3 / MinGW 13.1 ; huit suites de tests exécutées avant assemblage. Le workflow [42019946766](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42019946766) a été déclenché, mais GitHub refuse de démarrer le job : « The job was not started because an Actions budget is preventing further use. » Aucun artefact Actions n’a été produit et aucun changement de facturation n’a été effectué. Les distributions proviennent de la compilation locale, pas d’Actions.
+
+Code applicatif : e304fab79793f800acd7b6746a80c0d8d015ba21. Les résultats des essais finaux des archives sont ajoutés au dépôt après leur assemblage ; aucune modification applicative n’intervient pendant cette phase.
+
+## Distribution finale vérifiée
+
+ZIP final : CRC et empreinte de chaque fichier extrait vérifiés, exécutable identique au binaire testé. Extraction dans un dossier neuf puis lancement avec PATH limité aux répertoires système Windows : code 0. Installateur final : installation dans un dossier neuf, démarrage et désinstallation codes 0. Le fichier utilisateur synthétique est conservé et l’exécutable retiré. Aucun enregistrement d’installation existant n’a été remplacé.
+
+Preuves : qualification-019/portable-test.json, installer-test.json, build-payload.json, release-assets.json et captures. Ces derniers résultats sont ajoutés au dépôt après assemblage ; les rapports embarqués dans les archives s’arrêtent avant ces contrôles finaux. Aucun changement de code depuis e304fab79793f800acd7b6746a80c0d8d015ba21.
