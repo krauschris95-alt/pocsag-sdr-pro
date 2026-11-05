@@ -1,0 +1,15 @@
+{
+    "actual_render_signal_detected": true,
+    "baseline_rms": 0,
+    "captured_samples": 1012800,
+    "channels": 2,
+    "endpoint_muted": false,
+    "endpoint_volume": 0.5899999737739563,
+    "error": "",
+    "french_selected": true,
+    "sample_rate": 48000,
+    "sapi_completed": true,
+    "scope": "WASAPI default render endpoint, aggregate samples only; no microphone or audio file",
+    "speech_peak": 0.37906956672668457,
+    "speech_rms": 0.042679805519719075
+}

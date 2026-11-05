@@ -18,9 +18,10 @@ void Window::migrate(){
  auto column=[this](QString name,QString declaration){QSqlQuery q("PRAGMA table_info(capcodes)",db_);bool found=false;while(q.next())if(q.value(1).toString()==name)found=true;q.finish();if(!found)sql("ALTER TABLE capcodes ADD COLUMN "+name+" "+declaration);};
  if(!db_.transaction())throw std::runtime_error("Migration transaction failed");
  column("directory","TEXT DEFAULT ''");column("filename","TEXT DEFAULT ''");column("daily","INTEGER DEFAULT 0");column("interpretation","TEXT DEFAULT 'INHERIT'");column("retention_days","INTEGER DEFAULT 0");
- column("voice_enabled","INTEGER DEFAULT 0");column("pager_enabled","INTEGER DEFAULT 0");column("txt_enabled","INTEGER DEFAULT 1");
+ column("voice_enabled","INTEGER DEFAULT 0");column("pager_enabled","INTEGER DEFAULT 0");column("txt_enabled","INTEGER DEFAULT 1");column("txt_path","TEXT DEFAULT ''");
+ sql("CREATE TABLE IF NOT EXISTS txt_profiles(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,path TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 0)");sql("CREATE TABLE IF NOT EXISTS txt_profile_capcodes(profile_id INTEGER NOT NULL,ric INTEGER NOT NULL,PRIMARY KEY(profile_id,ric))");
  {QSqlQuery columns("PRAGMA table_info(messages)",db_);bool exists=false;while(columns.next())if(columns.value(1).toString()=="event_uid")exists=true;columns.finish();if(!exists)sql("ALTER TABLE messages ADD COLUMN event_uid TEXT");}sql("CREATE UNIQUE INDEX IF NOT EXISTS message_event_uid ON messages(event_uid) WHERE event_uid IS NOT NULL");
- sql("PRAGMA user_version=6");if(!db_.commit())throw std::runtime_error("Migration commit failed");
+ sql("CREATE INDEX IF NOT EXISTS capcode_numeric_ric ON capcodes(CAST(ric AS INTEGER))");sql("PRAGMA user_version=7");if(!db_.commit())throw std::runtime_error("Migration commit failed");
 }
 void Window::saveOptions(){
  if(!allowTone_)return;

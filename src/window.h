@@ -40,6 +40,7 @@ private:QVector<float> levels_;QImage waterfall_;
 class Window:public QMainWindow {
  Q_OBJECT
 public:explicit Window(QString storageDirectory={},std::unique_ptr<SpeechBackend> speechBackend={});~Window();
+signals:void lowerFilterChanged(bool active);
 private:
  friend struct IntegrationChecks;
  QSqlDatabase db_;QSqlQueryModel *all_,*saved_;QTableView *allView_,*savedView_;Receiver radio_;
@@ -49,13 +50,13 @@ private:
  QComboBox *format_=nullptr,*step_=nullptr;
  QCheckBox *daily_=nullptr;QLineEdit *root_=nullptr,*profileName_=nullptr;QLabel* activePath_=nullptr;
  void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
- void capcodes();void journal();void configureJournals(bool focusPermanent);void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
+ void capcodes();void journal();void configureJournals(bool focusPermanent);void txtProfiles();void storageOptions();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
  void flushJournal();
  void setupOptions(QAction* start,QAction* stop,QAction* open,QAction* cap,QAction* log,QMenu* view,QMenu* help);
  void saveOptions();void retune();void migrate();
  QString generalJournalPath(QDateTime timestamp)const;
  static QString dailyPath(QString root,QString name,QDateTime timestamp);
- QString settingsFile_;
+ QString settingsFile_,bootstrapFile_;
  SpeechService speech_;SpeechSettings speechSettings_;std::unique_ptr<JournalWorker> journalWorker_;
  QTabWidget* tabs_=nullptr;QSplitter* messageSplit_=nullptr;QLabel* frequencyDisplay_=nullptr;
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;

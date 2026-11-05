@@ -1,4 +1,4 @@
-# POCSAG SDR Pro — 0.1.9
+# POCSAG SDR Pro — 0.1.10
 
 Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulation, décodage POCSAG, historique, TXT et voix Windows intégrés, sans SDRSharp, PDW, câble audio virtuel ni service cloud.
 
@@ -7,6 +7,24 @@ Préversion Windows x64, C++20 / Qt 6.8.3 / SQLite. Réception SDR, démodulatio
 Télécharger le ZIP portable ou l’installateur depuis les [Releases](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases). Extraire le ZIP puis ouvrir `POCSAG-SDR-Pro.exe`, ou utiliser l’installateur par utilisateur. Fermer l’ancienne version avant d’ouvrir la nouvelle. Les DLL Qt, SQLite, MinGW et les bibliothèques RTL/SoapyRTL/HackRF sont fournies ; Python et Visual Studio ne sont pas nécessaires pour utiliser l’application. Le pilote USB adapté reste nécessaire, notamment WinUSB pour RTL-SDR. Les exécutables ne sont pas signés.
 
 La base et les préférences restent dans `%LOCALAPPDATA%/POCSAG-SDR-Pro/POCSAG-SDR-Pro/`. Migration additive : aucun effacement de l’historique, des capcodes ou des TXT existants. L’installateur ne supprime pas les données et journaux utilisateur à la désinstallation.
+
+## Corrections 0.1.10
+
+Dans **Capcodes**, chaque ligne possède un **Fichier TXT** éditable, **Parcourir…** et **Ouvrir**. Plusieurs capcodes peuvent partager un fichier permanent ; les fichiers existants sont complétés sans être effacés. **Actif** et **Journal TXT** doivent être ON pour cette destination. Le fichier permanent commun de 0.1.9 reste disponible pour les lignes sans chemin individuel.
+
+**Enregistrements → Profils TXT** permet de créer plusieurs destinations nommées, de les activer et de cocher leurs capcodes dans une liste recherchable par numéro ou alias. Un capcode peut appartenir à plusieurs profils. Les destinations identiques sont dédupliquées pour chaque événement ; deux messages réellement reçus identiques restent deux événements. Supprimer un profil ne supprime aucun fichier. Les anciens chemins historiques sont conservés sans être activés automatiquement.
+
+Le journal **Belgique** reste indépendant, avec un fichier quotidien selon la date de Bruxelles. Tous les nouveaux TXT utilisent exclusivement `CAPCODE JJ/MM/AAAA HH:mm:ss MESSAGE`, en UTF-8, sans conversion des anciens fichiers. Une destination inaccessible reste en attente durable ; les autres fichiers continuent à être servis, même au-delà de 1 000 écritures en attente.
+
+La voix est autorisée par défaut : **Actif + Voix ON** sur un capcode suffit. L’alias est annoncé avant le message complet, dans une file indépendante. **VOIX COUPÉES** est une coupure générale explicite et mémorisée ; une voix française installée est sélectionnée automatiquement au premier usage. Les réglages de sortie, volume et vitesse restent dans Outils. Le test sonore local a été mesuré sur la sortie Windows et confirmé audible par l’utilisateur.
+
+Le tableau inférieur joint les capcodes numériquement, y compris les anciens numéros stockés en texte avec des zéros initiaux. Il reste indépendant des filtres généraux du tableau supérieur. Son filtre propre est signalé et peut être effacé directement. Les options **Actif**, **En bas** et les types de messages restent applicables.
+
+L’historique SQLite n’est ni plafonné ni purgé automatiquement. Les identifiants et offsets sont sur 64 bits. Une fenêtre de consultation bornée en mémoire affiche jusqu’à un million de lignes ; le menu contextuel donne accès aux fenêtres précédentes/suivantes, au début et aux derniers messages. La limite de fenêtre ne supprime aucun message.
+
+**Enregistrements → Emplacement des données** propose une migration explicite : arrêter la réception, créer une sauvegarde sur le disque cible, copier et contrôler les empreintes et l’intégrité SQLite, puis activer le nouveau dossier au redémarrage. L’original reste intact. Le dossier cible doit être vide ; aucun TXT externe n’est déplacé. Un échec laisse l’original actif. La réactivation explicite du dossier précédent ne fusionne pas les nouveaux historiques. Un disque de données absent provoque une erreur, jamais un retour silencieux au dossier par défaut. `--data-directory CHEMIN` permet un choix explicite de récupération.
+
+Voir le [rapport de qualification 0.1.10](docs/QUALIFICATION-0.1.10.md). Les décodeurs SDR/POCSAG et les préférences PrivateRadio restent inchangés ; aucune transmission PrivateRadio n’est ajoutée.
 
 ## Sélection des destinations TXT — 0.1.9
 
@@ -22,7 +40,7 @@ Voir le [rapport 0.1.9](docs/QUALIFICATION-0.1.9.md). Le décodeur, le filtrage 
 
 Les interrupteurs **Actif**, **En bas**, **Voix**, **Journal TXT** et **Pager PrivateRadio** affichent explicitement ON/OFF dans la gestion des capcodes. Les réglages secondaires sont accessibles par **Paramètres avancés du capcode** ; les anciennes valeurs restent conservées. Le relais PrivateRadio demeure une préférence sans transmission réseau.
 
-La barre supérieure propose **Voix ON/OFF**. Le menu Outils conserve le choix de voix Windows, volume, vitesse, test et arrêt ; le menu contextuel des tableaux permet de relire un message. Chaque lecture automatique annonce l’alias, puis le message complet, dans une file indépendante de la réception. L’interrupteur général et la voix individuelle doivent être activés.
+La barre supérieure propose **Voix ON/OFF**. Le menu Outils conserve le choix de voix Windows, volume, vitesse, test et arrêt ; le menu contextuel des tableaux permet de relire un message. Chaque lecture automatique annonce l’alias, puis le message complet, dans une file indépendante de la réception. Depuis 0.1.10, la voix générale est autorisée par défaut ; seule une coupure explicite la désactive.
 
 **Derniers messages** ramène le tableau actif au bas, dans l’ordre de réception. Les tableaux restent indépendants. Les largeurs des colonnes, la géométrie et le séparateur sont mémorisés. Les dates affichées et les nouvelles lignes TXT utilisent `JJ/MM/AAAA` ; les noms quotidiens restent `Belgique-AAAA-MM-JJ.txt` et les anciens TXT ne sont pas convertis.
 

@@ -9,13 +9,14 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
+struct QuietSpeech:SpeechBackend{void configure(const SpeechSettings&)override{}void speak(const QString&,const std::atomic_bool&)override{}};
 struct IntegrationChecks {
  static void require(bool ok,std::source_location at=std::source_location::current()){if(!ok)throw std::runtime_error("capcode check line "+std::to_string(at.line()));}
  static void edit(Window& w,std::function<void(QDialog*,QTableWidget*,QPushButton*)> action){std::exception_ptr error;QTimer dismiss;QObject::connect(&dismiss,&QTimer::timeout,[]{if(auto box=qobject_cast<QMessageBox*>(QApplication::activeModalWidget()))box->accept();});dismiss.start(10);QTimer::singleShot(10,&w,[&]{auto dlg=qobject_cast<QDialog*>(QApplication::activeModalWidget());try{require(dlg);action(dlg,dlg->findChild<QTableWidget*>(),dlg->findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Save));}catch(...){error=std::current_exception();dlg->reject();}});w.capcodes();if(error)std::rethrow_exception(error);}
  static void add(QDialog* d){for(auto b:d->findChildren<QPushButton*>())if(b->text()=="Ajouter"){b->click();return;}require(false);}
  static QString value(Window& w,QString column){QSqlQuery q("SELECT "+column+" FROM capcodes WHERE ric=146035",w.db_);require(q.next());return q.value(0).toString();}
  static void reproduce(){QTemporaryDir root;QString dir=root.path();{
-  Window w(dir);require(!w.radio_.hasLiveIq());w.updateSdrIndicator();require(w.sdrIndicator_->text().contains("INACTIF"));
+  Window w(dir,(QCoreApplication::arguments().contains("--speech")||QCoreApplication::arguments().contains("--hardware"))?std::unique_ptr<SpeechBackend>{}:std::make_unique<QuietSpeech>());require(!w.radio_.hasLiveIq());w.updateSdrIndicator();require(w.sdrIndicator_->text().contains("INACTIF"));
   edit(w,[&](auto d,auto t,auto save){add(d);require(t->item(0,14));t->item(0,0)->setText("0146035");t->item(0,1)->setText("Ambulance Z3");{auto index=t->model()->index(0,14);QStyleOptionViewItem option;QMouseEvent release(QEvent::MouseButtonRelease,QPointF(10,10),QPointF(10,10),Qt::LeftButton,Qt::NoButton,Qt::NoModifier);require(t->itemDelegateForColumn(14)->editorEvent(&release,t->model(),option,index));require(t->item(0,14)->checkState()==Qt::Checked);}t->item(0,7)->setText(dir+"/nouveau/dossier");t->item(0,8)->setText("interventions.txt");save->click();require(!d->isVisible());});
   require(value(w,"alias")=="Ambulance Z3"&&value(w,"voice_enabled")=="1");require(!QFileInfo::exists(dir+"/nouveau/dossier/interventions.txt"));
   edit(w,[&](auto d,auto t,auto save){t->item(0,16)->setCheckState(Qt::Checked);save->click();require(!d->isVisible());});require(value(w,"pager_enabled")=="1");
