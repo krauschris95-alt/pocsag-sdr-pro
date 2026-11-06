@@ -1,3 +1,7 @@
+## 0.1.18 — spectre fixe −20 / −100 dBFS
+
+17/17 tests locaux (79,97 s), puis test renforcé de persistance dans deux processus Windows séparés. Réception Blog V4 réelle à 169,626 MHz, avant et après redémarrage : 45 s + 30 s, 659 contrôles de plage fixe réussis, 34 996 224 octets IQ et 420 trames, aucune erreur. Neuf graduations, palette bleue, contraste/luminosité/lissage restaurés, aucune modification des FFT brutes. [Qualification et captures](QUALIFICATION-0.1.18.md). Sources décodeur, capcodes, TXT, SQLite, voix et PrivateRadio inchangées.
+
 ## 0.1.17 — adaptateurs SDR et diagnostic Windows
 
 Seize suites CTest réussies : contrats natifs Airspy/HF+, HackRF signé et reconnexion, FUNcube HID/PCM simulé, contrat C Soapy et erreurs, diagnostic et identité persistante, plus la non-régression 0.1.16. Blog V4 physique : 93 s avec deux réaccords, SQLite, deux TXT, trois annonces SAPI et WAV ; puis Soapy RTL réel 30 s, neuf textes reçus, aucune erreur. Le bouton Tester IQ est vérifié sur le Blog V4 sans insertion dans la base utilisateur. Windows 11 26H2 relevé par Qt ; Windows 10 séparé non qualifié. [Qualification et limites](QUALIFICATION-0.1.17.md), [pilotes](SDR-COMPATIBILITY.md), [signature/SmartScreen](WINDOWS-SIGNING.md). Aucun certificat disponible, distribution non signée.

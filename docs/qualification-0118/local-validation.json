@@ -18,7 +18,10 @@
     -100
   ],
   "application_sha256": "88534732fc4e524dcb2856282846f3a0a67016aaae6012107f43be654c6e6912",
-  "hardware_validation": "pending: Windows sees Blog V4 / WinUSB / problem 0; API cannot read device serial while unavailable",
+  "hardware_validation": "passed: two independent RTL sessions, 45 s then 30 s after process restart",
   "published": false,
-  "user_data_modified": false
+  "user_data_modified": false,
+  "fixed_scale_checks": 659,
+  "iq_bytes": 34996224,
+  "decoder_frames": 420
 }
