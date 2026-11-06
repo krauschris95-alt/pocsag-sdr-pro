@@ -1,0 +1,11 @@
+{
+  "failed_runs": [
+    "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42195158387",
+    "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42195158695"
+  ],
+  "failed_test": "global_corrections, blockedBacklog line 28",
+  "cause": "Test observed existence of healthy.txt before full bytes and SQLite acknowledgment. Worker may create file while next asynchronous batch is still committing.",
+  "fix": "Wait for complete expected bytes plus pending-row count; preserve blocked-destination and no-duplicate assertions. No product changes.",
+  "isolated_repetitions_passed": 10,
+  "application_sha256_unchanged": "e3fdf2b78bd0c9c03c318250c8493fc0954f80548e19ed1c3585065becc9b12b"
+}

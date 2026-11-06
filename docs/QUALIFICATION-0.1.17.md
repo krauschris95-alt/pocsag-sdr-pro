@@ -30,3 +30,7 @@ Code applicatif : `62d454bf6bccb384ad8445cbfacd117829b38648`. Le tag de livraiso
 | --- | ---: | --- |
 | `POCSAG-SDR-Pro-0.1.17-windows-x64.zip` | 56874680 | `61ecae8ab322ef0aecd75fec912570774df3a593d04ccf44c2e714147830aec1` |
 | `POCSAG-SDR-Pro-0.1.17-windows-x64-setup.exe` | 50329506 | `1783ccfab0b67d979d221f893c3d43c35154ed99330c0a3870a705ece78c4494` |
+
+### Stabilisation du banc TXT après publication
+
+Les deux relances automatiques du commit de rapports `7d09996` (main et tag) ont compilé mais échoué sur `global_corrections`, ligne 28, avant déploiement. L’application est identique au code ayant passé les 16 tests et le packaging sur le run 42193633934. Le banc de destination bloquée attendait seulement l’existence du fichier sain : la création peut précéder la fin des octets et de l’accusé SQLite dans le lot asynchrone suivant. Le contrôle attend maintenant le contenu complet **et** l’accusé, tout en conservant les exigences de 1 100 écritures bloquées, progression de la destination saine et absence de doublons après reprise. Dix répétitions isolées ont passé. Aucun fichier applicatif ni paquet publié n’est modifié ; le tag historique n’est pas déplacé. Détails dans `txt-bench-race.json`.
