@@ -61,3 +61,9 @@ Empreintes des paquets locaux qualifiés (également dans `qualification-0116/re
 L’empreinte de l’exécutable compilé est identique dans le staging, le ZIP extrait et l’installation. Le ZIP exclut les fichiers DB, IQ, RAW, WAV, MP4 et INI ; les seuls exemples textuels sont synthétiques. Les rapports historiques restent inchangés.
 
 
+
+## GitHub Actions — contrôle distant
+
+Le premier run [42173427758](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42173427758) a compilé l’application et réussi les nouveaux tests, mais échoué sur l’ancien test de sélection TXT (`storage_regression_tests.cpp`, ancienne ligne 54). Le banc pilotait `selectFile` puis acceptait immédiatement pendant le chargement asynchrone du modèle de fichiers Qt ; il comparait aussi littéralement les chemins Windows, sans reconnaître un alias court/long du même dossier. Le banc renseigne désormais explicitement le champ de nom avec un chemin absolu et compare les parents canoniques. La fenêtre native et tout le code produit restent inchangés.
+
+Validation locale : trois passages consécutifs réussis (32,08 s), puis contrôle des alias de chemin réussi (12,36 s). Journaux `picker-ci-regression.log` et `picker-path-regression.log`. Le tag reste immuable ; cette correction du banc existe dans les commits suivants de main. Nouvelle compilation distante en cours, résultat consigné après sa fin.
