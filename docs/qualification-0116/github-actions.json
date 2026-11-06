@@ -1,0 +1,19 @@
+{
+  "application_source": "167637b8d0a54f68720471c19f9b04d215de139c",
+  "tag_commit": "51c7e48210e98e465480935771e652ad736baccb",
+  "ci_test_harness_commit": "d81259ba18b28792f90fc569761fd07efaf72a34",
+  "final_run": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42175565917",
+  "status": "success",
+  "tests_passed": 12,
+  "tests_failed": 0,
+  "ctest_seconds": 95.74,
+  "build_seconds": 415,
+  "artifact_url": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42175565917/artifacts/13483780279",
+  "artifact_sha256": "e440c2189006a886cda4a2c6b0e3475d2cd1cdb4629fae1553c4a1738430643c",
+  "tag_run": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42174191152",
+  "tag_run_status": "success",
+  "tag_artifact": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42174191152/artifacts/13482651498",
+  "published_release": "https://github.com/krauschris95-alt/pocsag-sdr-pro/releases/tag/v0.1.16",
+  "published_asset_hashes_match_qualified_local_files": true,
+  "scope": "CI recompiles same application code; later changes affect tests/reports only. Published binaries are locally qualified distributions."
+}
