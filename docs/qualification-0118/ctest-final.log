@@ -1,0 +1,39 @@
+Test project C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+      Start  1: decoder
+ 1/17 Test  #1: decoder ..........................   Passed    0.17 sec
+      Start  2: integration
+ 2/17 Test  #2: integration ......................   Passed    4.93 sec
+      Start  3: independent_reference
+ 3/17 Test  #3: independent_reference ............   Passed    0.16 sec
+      Start  4: speech_queue
+ 4/17 Test  #4: speech_queue .....................   Passed    0.04 sec
+      Start  5: receiver_reconnect_injected
+ 5/17 Test  #5: receiver_reconnect_injected ......   Passed    8.99 sec
+      Start  6: native_radio_injected
+ 6/17 Test  #6: native_radio_injected ............   Passed    2.60 sec
+      Start  7: soapy_adapter_injected
+ 7/17 Test  #7: soapy_adapter_injected ...........   Passed    0.18 sec
+      Start  8: hackrf_adapter_injected
+ 8/17 Test  #8: hackrf_adapter_injected ..........   Passed    9.19 sec
+      Start  9: sdr_device_manager
+ 9/17 Test  #9: sdr_device_manager ...............   Passed    0.96 sec
+      Start 10: capcode_save_regression
+10/17 Test #10: capcode_save_regression ..........   Passed    1.83 sec
+      Start 11: sqlite_storage_regression
+11/17 Test #11: sqlite_storage_regression ........   Passed    9.44 sec
+      Start 12: sqlite_snapshot_reproduction
+12/17 Test #12: sqlite_snapshot_reproduction .....   Passed    0.07 sec
+      Start 13: global_corrections
+13/17 Test #13: global_corrections ...............   Passed   20.67 sec
+      Start 14: pager_audio_contract
+14/17 Test #14: pager_audio_contract .............   Passed    9.02 sec
+      Start 15: spectrum_fixed_scale
+15/17 Test #15: spectrum_fixed_scale .............   Passed    1.64 sec
+      Start 16: presentation
+16/17 Test #16: presentation .....................   Passed    4.86 sec
+      Start 17: frequency_dialog_and_retune
+17/17 Test #17: frequency_dialog_and_retune ......   Passed    4.82 sec
+
+100% tests passed out of 17
+
+Total Test time (real) =  79.97 sec

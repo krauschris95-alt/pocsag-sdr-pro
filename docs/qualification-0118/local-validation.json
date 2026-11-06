@@ -1,0 +1,24 @@
+{
+  "version": "0.1.18",
+  "local_ctest_passed": 17,
+  "local_ctest_failed": 0,
+  "local_ctest_seconds": 79.97,
+  "separate_process_settings_restart": "passed",
+  "fixed_minimum_dbfs": -100,
+  "fixed_maximum_dbfs": -20,
+  "spectrum_ticks": [
+    -20,
+    -30,
+    -40,
+    -50,
+    -60,
+    -70,
+    -80,
+    -90,
+    -100
+  ],
+  "application_sha256": "88534732fc4e524dcb2856282846f3a0a67016aaae6012107f43be654c6e6912",
+  "hardware_validation": "pending: Windows sees Blog V4 / WinUSB / problem 0; API cannot read device serial while unavailable",
+  "published": false,
+  "user_data_modified": false
+}

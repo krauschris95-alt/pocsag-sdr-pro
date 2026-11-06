@@ -26,17 +26,30 @@
 #include <memory>
 #include <deque>
 #include <QJsonObject>
+class QSettings;
 class Spectrum:public QWidget {
  Q_OBJECT
 public:
  explicit Spectrum(QWidget* p=nullptr):QWidget(p){setMinimumHeight(160);}
  void updateIq(const QByteArray& b);
  quint64 frequency=169626000;double zoom=1;
- double sampleRate=240000,bandwidth=21000,top=-20,bottom=-120,contrast=1;int waterfallStride=1,waterfallFrames=0;
- void tuneFrequency(quint64 value){if(frequency!=value){levels_.clear();waterfall_=QImage();}frequency=value;update();}
+ double sampleRate=240000,bandwidth=21000,top=-20,bottom=-100,contrast=1,brightness=0;
+ bool automaticScale=false;int smoothingFrames=4,waterfallStride=1,waterfallFrames=0;
+ void tuneFrequency(quint64 value);
+ void loadSettings(QSettings& settings);
+ void saveSettings(QSettings& settings)const;
+ void displaySettingsChanged();
+ QPair<double,double> axisRange()const{return automaticScale?qMakePair(autoBottom_,autoTop_):qMakePair(bottom,top);}
+ QVector<double> axisTicks()const;
+ const QVector<float>& fftLevels()const{return rawLevels_;}
+ const QVector<float>& displayedLevels()const{return levels_;}
+ QRectF plotRect()const;
+ QColor waterfallColor(double db)const;
 signals:void tuneRequested(qint64 frequency);
 protected:void paintEvent(QPaintEvent*)override;void mousePressEvent(QMouseEvent*)override;
-private:QVector<float> levels_;QImage waterfall_;
+private:QVector<float> levels_,rawLevels_,averagePower_,waterfallDb_;QImage waterfall_;
+ double autoBottom_=-100,autoTop_=-20;bool recolor_=true;int historyRows_=0;
+ void rebuildWaterfall();
 };
 class Window:public QMainWindow {
  Q_OBJECT
@@ -65,7 +78,7 @@ private:
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;
  bool receiveWanted_=false;bool testStorage_=false;QTimer* refreshTimer_=nullptr;
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
- void reloadDevices();void sdrDevices();void storePreferences();QStringList disabledTypes()const;
+ void reloadDevices();void sdrDevices();void spectrumOptions();void storePreferences();QStringList disabledTypes()const;
  QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();
  std::vector<std::unique_ptr<Receiver>> extraRadios_;Receiver* selectedRadio_=nullptr;QMenu* sourcesMenu_=nullptr;
  void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();

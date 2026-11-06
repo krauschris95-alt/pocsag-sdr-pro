@@ -1,3 +1,9 @@
+## Version 0.1.18 — échelle fixe du spectre et waterfall bleu
+
+Le spectre utilise par défaut une échelle **fixe de −20 à −100 dBFS**, avec les deux bornes toujours graduées. Le mode automatique reste facultatif. Affichage → Réglages spectre / waterfall permet de régler la palette bleue, son contraste et sa luminosité, ainsi que le lissage temporel de la courbe cyan. Ces choix sont enregistrés immédiatement et restaurés au redémarrage.
+
+La FFT et sa normalisation sont conservées. Le lissage est une moyenne exponentielle de puissance pour la courbe ; le waterfall garde les niveaux FFT bruts. Aucune translation artificielle du bruit de fond. Décodeur, capcodes, TXT, SQLite, voix et PrivateRadio inchangés. [Validation et captures réelles](docs/QUALIFICATION-0.1.18.md).
+
 ## Version 0.1.17 — adaptateurs USB et diagnostic Windows
 
 Récepteur → **SDR détectés et pilotes…** sépare les appareils annoncés par une API des interfaces USB Windows. Actualiser, capacités, essai IQ de cinq secondes et choix du récepteur sont accessibles dans cette fenêtre. Une série absente ou ambiguë ne doit pas sélectionner arbitrairement une autre clé.

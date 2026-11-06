@@ -1,0 +1,25 @@
+# Qualification 0.1.18 — spectre et waterfall
+
+## Périmètre
+
+Le changement porte sur le widget Spectrum, ses réglages et les libellés de version/distribution. Les sources du décodeur, de l’ingestion, des capcodes, des journaux, du stockage SQLite, de la voix et de PrivateRadio ne sont pas modifiées. L’historique et les fichiers utilisateur sont préservés. Les essais de réception utilisent un dossier de travail isolé ; aucun corps de message radio, IQ ou base de travail n’est publié.
+
+L’ancien défaut était −120 dBFS en bas et la boucle des graduations n’affichait pas la borne inférieure. Le nouveau mode fixe utilise exactement −100 / −20 dBFS et neuf graduations de 10 dB, dans une marge distincte de la courbe et du waterfall. Le mode automatique, facultatif, ajuste seulement les limites de représentation selon la FFT ; il ne modifie pas les mesures.
+
+## FFT et affichage
+
+Transformée complexe 1 024 points, fenêtre de Hann et normalisation d’amplitude `/512` conservées depuis 0.1.17 : `20 log10(max(1e-8, abs(FFT)/512))`. Aucun décalage ajouté au bruit, aucune normalisation de la courbe sur un niveau cible. Les valeurs brutes sont conservées séparément de la courbe lissée. Le lissage optionnel est une moyenne exponentielle de puissance, coefficient 1/N (1 à 30) ; N = 1 le désactive. Le waterfall utilise les niveaux bruts, avec une palette bleu nuit → azur → cyan glacé. Contraste et luminosité changent uniquement la correspondance couleur.
+
+Les neuf repères sont −20, −30, −40, −50, −60, −70, −80, −90 et −100 dBFS. Les réglages de mode, contraste, luminosité, lissage et vitesse waterfall sont enregistrés immédiatement dans le dossier de configuration existant, sans déplacer la base ou les journaux. Le changement de fréquence réinitialise seulement l’historique graphique, comme auparavant. Le repère rouge et le clic d’accord utilisent désormais la zone du tracé, en tenant compte de la marge des graduations.
+
+## Validation
+
+Les preuves seront consignées dans `qualification-0118/` : comparaison avec une DFT indépendante, absence de modification des valeurs brutes par les contrôles visuels, maintien des bornes sur des signaux de puissances différentes, mode automatique facultatif et restauration fixe, palette monotone bleue, persistance des réglages, puis deux processus de réception RTL successifs utilisant la même configuration de test. Les captures de la fenêtre Qt compilée proviennent de vrais IQ RTL, pas d’un spectre simulé. Les captures synthétiques et les essais matériels sont distingués dans les rapports.
+
+La qualification physique est limitée au Blog V4 disponible à 169,626 MHz et au poste Windows utilisé. Les autres familles SDR gardent les limites de qualification de 0.1.17. Les exécutables restent non signés ; aucune protection Windows désactivée.
+
+### État local avant qualification matérielle
+
+Compilation Windows x64 réussie. **17/17 suites locales passent en 79,97 s** (`ctest-final.log`). Le test spectre a ensuite été renforcé avec fermeture et relancement dans **deux processus Windows séparés** : mode fixe, bornes −100 / −20, contraste 1,3, luminosité 8 % et lissage 6 restaurés ; contrôle réussi (`spectrum-restart-process.log`). La comparaison DFT et l’absence de modification des niveaux bruts passent également.
+
+La première tentative matérielle ne reçoit aucun IQ : Windows voit le Blog V4 série 00000001, WinUSB et problème 0, mais `rtlsdr_get_device_usb_strings(0)` échoue et l’ouverture par série n’est pas possible. Cette tentative n’est pas une validation RTL et ses images sans IQ ne sont pas fournies comme preuve. La réception d’une autre application doit être arrêtée, ou la clé rendue disponible, avant les deux sessions réelles de confirmation. **Aucune publication de 0.1.18 avant cette validation.** Les captures et rapports réussis seront ajoutés une fois le récepteur accessible.
