@@ -1,0 +1,11 @@
+{
+  "run": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42193633934",
+  "source": "62d454bf6bccb384ad8445cbfacd117829b38648",
+  "status": "success",
+  "ctest_passed": 16,
+  "ctest_failed": 0,
+  "test_step": "1m 15s",
+  "artifact": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42193633934/artifacts/13490703927",
+  "artifact_digest": "21391e3b80d9c1fc32aa8c2e11542d1cbc770d69c347d72e013a3355ab118ec4",
+  "warning": "Node 20 deprecated in dependencies; Actions forced Node 24; build/tests/packaging succeeded"
+}

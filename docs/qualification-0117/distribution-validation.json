@@ -1,0 +1,19 @@
+{
+  "version": "0.1.17",
+  "application_source": "62d454bf6bccb384ad8445cbfacd117829b38648",
+  "application_sha256": "e3fdf2b78bd0c9c03c318250c8493fc0954f80548e19ed1c3585065becc9b12b",
+  "files_verified": 240,
+  "portable_crc_and_hashes": true,
+  "portable_system_path_launch": true,
+  "signature": "NotSigned",
+  "assets": {
+    "POCSAG-SDR-Pro-0.1.17-windows-x64.zip": {
+      "bytes": 56874680,
+      "sha256": "61ecae8ab322ef0aecd75fec912570774df3a593d04ccf44c2e714147830aec1"
+    },
+    "POCSAG-SDR-Pro-0.1.17-windows-x64-setup.exe": {
+      "bytes": 50329506,
+      "sha256": "1783ccfab0b67d979d221f893c3d43c35154ed99330c0a3870a705ece78c4494"
+    }
+  }
+}

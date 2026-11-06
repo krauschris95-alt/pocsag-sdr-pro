@@ -19,3 +19,14 @@ Seize suites CTest finales : 16/16, 87,37 s (`ctest-final.log`). HackRF signé C
 ## Limites
 
 Pas de qualification physique Airspy, HackRF, SDRplay ou FUNcube, ni de plusieurs récepteurs physiques simultanés. L’association des interfaces HID/audio FUNcube reste expérimentale jusqu’à un essai matériel. Aucun SDK SDRplay installé détecté ; son module n’est pas redistribué. Modules supplémentaires et SDK requis selon la matrice `SDR-COMPATIBILITY.md`. Pas de certification sur Windows 10 séparé. Aucun certificat d’éditeur disponible : EXE/installateur non signés, procédure préparée et empreintes publiées. Les changements de facteurs Qt ne prouvent pas plusieurs écrans/DPI système physiques.
+
+## Distribution qualifiée
+
+Code applicatif : `62d454bf6bccb384ad8445cbfacd117829b38648`. Le tag de livraison ajoute uniquement les rapports, sans changer l’application. ZIP CRC valide, extraction isolée : 240 fichiers identiques par SHA-256. Lancement du ZIP avec PATH Windows seul et réception RTL dix secondes à 169,626 MHz, cinq messages décodés, 524 288 octets transmis au spectre, aucune erreur (`portable-rtl.json`). Installation/lancement/désinstallation code 0 dans un dossier de test, 240 empreintes conformes, TXT témoin préservé (`installer-test.json`). Les anciens paquets et données utilisateur sont conservés ; seule l’ancienne extraction de test 0.1.16, vérifiée identique à son archive conservée, a été retirée pour l’espace disque.
+
+[GitHub Actions réussi](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42193633934) : compilation, 16/16 tests, déploiement Airspy/HF+/RTL/HackRF/Soapy et ZIP/installateur, durée du job 7 min 7 s. [Artefact CI](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42193633934/artifacts/13490703927). Avertissement non bloquant des dépendances Actions Node 20 forcées vers Node 24 ; aucun échec de build/test/packaging. Les paquets locaux ci-dessous sont ceux testés par installation et matériel, avec empreintes propres ; ils ne sont pas présentés comme identiques bit à bit aux archives CI.
+
+| Paquet local qualifié | Octets | SHA-256 |
+| --- | ---: | --- |
+| `POCSAG-SDR-Pro-0.1.17-windows-x64.zip` | 56874680 | `61ecae8ab322ef0aecd75fec912570774df3a593d04ccf44c2e714147830aec1` |
+| `POCSAG-SDR-Pro-0.1.17-windows-x64-setup.exe` | 50329506 | `1783ccfab0b67d979d221f893c3d43c35154ed99330c0a3870a705ece78c4494` |
