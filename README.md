@@ -1,3 +1,11 @@
+## Version 0.1.17 — adaptateurs USB et diagnostic Windows
+
+Récepteur → **SDR détectés et pilotes…** sépare les appareils annoncés par une API des interfaces USB Windows. Actualiser, capacités, essai IQ de cinq secondes et choix du récepteur sont accessibles dans cette fenêtre. Une série absente ou ambiguë ne doit pas sélectionner arbitrairement une autre clé.
+
+Ajout des API natives Airspy R2/Mini et HF+ (DLL x64 fournies) et d’un adaptateur expérimental FUNcube HID + audio IQ stéréo Windows. HackRF et Soapy conservés ; les runtimes Soapy externes et leurs modules associés peuvent être configurés pour SDRplay/Lime/bladeRF/Pluto selon les pilotes installés. Cela ne constitue pas une qualification physique de ces matériels.
+
+[Compatibilité et pilotes](docs/SDR-COMPATIBILITY.md), [tests et limites](docs/QUALIFICATION-0.1.17.md), [signature Windows / SmartScreen](docs/WINDOWS-SIGNING.md). Distribution non signée faute de certificat d’éditeur ; empreintes SHA-256 publiées avec les téléchargements. Aucun pilote n’est installé ou remplacé automatiquement.
+
 ## Version 0.1.16 — fréquence cliquable et annonce P0
 
 Cliquer sur l’encadré de fréquence en haut à droite, ou lui donner le focus puis Entrée/Espace : **Changer la fréquence**. Saisie MHz à six décimales, point ou virgule, flèches avec pas exact en Hz, quatorze pas prédéfinis et pas personnalisé. Six raccourcis, favoris supplémentaires, noms, ajout/modification/suppression et ordre mémorisés. Les flèches et favoris préparent une valeur ; **Appliquer** réaccorde le récepteur sélectionné, vérifie le pilote puis la reprise des IQ. En cas de refus, restauration de l’ancien accord lorsque possible, sinon arrêt avec erreur. Récepteur arrêté : préparation du prochain démarrage, sans activation. Aucune grille de canaux imposée.
@@ -151,7 +159,7 @@ Airspy/HF+, SDRplay, Lime, bladeRF, Pluto, USRP et Funcube nécessitent des modu
 
 Plusieurs sources ont leurs paramètres et décodeurs indépendants. Récepteur → Source du spectre choisit celle représentée ; les autres continuent. Arrêter coupe toutes les sources, Démarrer concerne le principal. Ne pas ouvrir le même appareil à la fois par deux adaptateurs. Deux lectures IQ simultanées sont testées ; deux appareils physiques restent à qualifier.
 
-Limites : fréquence stockée sur 32 bits, maximum 4294,967295 MHz ; Soapy 120 kéch/s à 20 Méch/s selon pilote/CPU/USB, conversion CF32 vers le CU8 du moteur. Un module natif bloquant peut retarder l’arrêt. Diagnostic CPU x86-64/SSE2/AVX matériel disponible ; aucune instruction AVX obligatoire.
+Limites : fréquence stockée sur 32 bits, maximum 4294,967295 MHz ; Soapy 48 kéch/s à 20 Méch/s selon pilote/CPU/USB, conversion CF32 vers le CU8 du moteur. Un module natif bloquant peut retarder l’arrêt. Diagnostic CPU x86-64/SSE2/AVX matériel disponible ; aucune instruction AVX obligatoire.
 
 PrivateRadio reste une préparation hors ligne : préférences persistées et contrat de message, aucun transport, serveur, authentification ou relais actif. Aucun texte radio n’est envoyé au cloud.
 

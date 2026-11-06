@@ -65,7 +65,7 @@ private:
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;
  bool receiveWanted_=false;bool testStorage_=false;QTimer* refreshTimer_=nullptr;
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
- void reloadDevices();void storePreferences();QStringList disabledTypes()const;
+ void reloadDevices();void sdrDevices();void storePreferences();QStringList disabledTypes()const;
  QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();
  std::vector<std::unique_ptr<Receiver>> extraRadios_;Receiver* selectedRadio_=nullptr;QMenu* sourcesMenu_=nullptr;
  void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();

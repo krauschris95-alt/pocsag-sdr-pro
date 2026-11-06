@@ -8,7 +8,7 @@
 #include "decoder.h"
 Q_DECLARE_METATYPE(pocsag::Message)
 struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; QString capture;QString deviceKey;bool automaticGain=false;quint32 bandwidth=0;bool reconnect=true;int vgaGain=20;quint32 channelBandwidth=21000;double squelch=-160;QString antenna;QString label; };
-struct RadioDevice {QString name,key;};
+struct RadioDevice {QString name,key,backend,serial,usbId,driver,status,resolution;bool usable=true;};
 class Receiver:public QThread {
  Q_OBJECT
 public:
@@ -16,7 +16,7 @@ public:
  RadioConfig config;
  std::atomic_bool stopping{false};
  static QStringList devices();
- static QVector<RadioDevice> deviceInfos();
+ static QVector<RadioDevice> deviceInfos(QStringList* diagnostics=nullptr);
  void start(Priority priority=InheritPriority){stopping=false;lastLiveIq_=0;iqBytes_=decodedFrames_=words_=rejected_=0;QThread::start(priority);}
  bool hasLiveIq()const;
  quint64 iqBytes()const{return iqBytes_;}quint64 decodedFrames()const{return decodedFrames_;}quint64 measuredWords()const{return words_;}quint64 rejectedWords()const{return rejected_;}

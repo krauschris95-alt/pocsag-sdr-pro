@@ -1,0 +1,9 @@
+Test project C:/Users/chris/Documents/ChatGPT/pocsag avec sdr/build
+    Start 6: native_radio_injected
+1/2 Test #6: native_radio_injected ............   Passed    2.62 sec
+    Start 9: sdr_device_manager
+2/2 Test #9: sdr_device_manager ...............   Passed    0.96 sec
+
+100% tests passed out of 2
+
+Total Test time (real) =   3.59 sec

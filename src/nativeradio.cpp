@@ -1,0 +1,43 @@
+#include "nativeradio.h"
+#include "fcdradio.h"
+#include "iqconversion.h"
+#include <QCoreApplication>
+#include <QLibrary>
+#include <QElapsedTimer>
+#include <QThread>
+#include <array>
+#include <chrono>
+namespace {
+template<class T>T api(QLibrary& lib,const char* name){auto fn=lib.resolve(name);if(!fn)throw std::runtime_error(("API native manquante : "+QString::fromLatin1(name)+" — "+lib.fileName()).toStdString());return reinterpret_cast<T>(fn);}
+void check(int value,QString operation){if(value<0)throw std::runtime_error((operation+" : code "+QString::number(value)+". Vérifier le pilote constructeur/WinUSB, l’architecture x64 et les applications utilisant ce SDR.").toStdString());}
+class Device {
+public:QLibrary lib;void* device=nullptr;bool hf=false,streaming=false;QString prefix;
+ Device(bool plus):hf(plus),prefix(plus?"airspyhf_":"airspy_"){
+  QString base=plus?"airspyhf":"airspy";QString forced=qEnvironmentVariable(plus?"POCSAG_TEST_AIRSPYHF_LIBRARY":"POCSAG_TEST_AIRSPY_LIBRARY");
+  if(!forced.isEmpty())lib.setFileName(forced);else lib.setFileName(QCoreApplication::applicationDirPath()+"/lib"+base+".dll");
+  if(!lib.load()){if(forced.isEmpty()){lib.setFileName(base);lib.load();}if(!lib.isLoaded())throw std::runtime_error(("Bibliothèque "+base+" x64 indisponible : "+lib.errorString()).toStdString());}
+ }
+ template<class T>T fn(const char* suffix){auto name=(prefix+QString::fromLatin1(suffix)).toLatin1();return api<T>(lib,name.constData());}
+ void open(QString key){fn<int(*)(void*)>("close");bool ok=false;auto serial=key.section(':',1).toULongLong(&ok,16);if(!ok)throw std::runtime_error("Numéro de série Airspy invalide");check(fn<int(*)(void**,uint64_t)>("open_sn")(&device,serial),"Ouverture "+key);if(!device)throw std::runtime_error("Airspy : poignée nulle");}
+ QVector<double> rates(){uint32_t count=0;check(fn<int(*)(void*,uint32_t*,uint32_t)>("get_samplerates")(device,&count,0),"Nombre de taux IQ Airspy");if(!count||count>128)throw std::runtime_error("Liste des taux Airspy invalide");std::vector<uint32_t> values(count);check(fn<int(*)(void*,uint32_t*,uint32_t)>("get_samplerates")(device,values.data(),count),"Taux IQ Airspy");QVector<double> out;for(auto n:values)if(n>=48000&&n<=20000000)out<<n;if(out.isEmpty())throw std::runtime_error("Aucun taux IQ Airspy pris en charge (48 kéch/s à 20 Méch/s)");return out;}
+ ~Device(){if(device){if(streaming){auto name=(prefix+(hf?"stop":"stop_rx")).toLatin1();auto stop=reinterpret_cast<int(*)(void*)>(lib.resolve(name.constData()));if(stop)stop(device);}auto name=(prefix+"close").toLatin1();auto close=reinterpret_cast<int(*)(void*)>(lib.resolve(name.constData()));if(close)close(device);}}
+};
+// ABI layouts from the official Airspy C APIs; callback samples are interleaved CF32.
+struct Transfer{void* device;void* context;float* samples;int count;uint64_t dropped;int type;};
+struct HfTransfer{void* device;void* context;float* samples;int count;uint64_t dropped;};
+struct Context{std::function<void(QByteArray)> consume;std::atomic_bool* stopping;std::atomic_bool invalid=false;std::atomic<qint64> last=0;std::atomic<quint64> dropped=0;};
+qint64 now(){return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();}
+template<class T>int block(T* transfer){if(!transfer||!transfer->context)return -1;auto& c=*static_cast<Context*>(transfer->context);if(*c.stopping)return -1;try{if(transfer->count<=0)return 0;c.consume(IqConversion::floats(transfer->samples,transfer->count));c.last=now();c.dropped+=transfer->dropped;return 0;}catch(...){c.invalid=true;return -1;}}
+int callback(Transfer* t){if(t&&t->type!=0){if(t->context)static_cast<Context*>(t->context)->invalid=true;return -1;}return block(t);}
+int hfCallback(HfTransfer* t){return block(t);}
+}
+bool NativeRadio::supports(QString key){return key.startsWith("airspy:")||key.startsWith("airspyhf:")||key.startsWith("fcd:");}
+QVector<RadioDevice> NativeRadio::devices(QStringList* diagnostics){QVector<RadioDevice> out=FcdRadio::devices(diagnostics);for(bool hf:{false,true})try{Device api(hf);auto list=api.fn<int(*)(uint64_t*,int)>("list_devices");int total=list(nullptr,0);check(total,"Détection Airspy");if(total>1024)throw std::runtime_error("Nombre d’appareils Airspy invalide");std::vector<uint64_t> serials(size_t(qMax(total,1)),0);int found=list(serials.data(),total);check(found,"Séries Airspy");for(int i=0;i<qMin(total,found);++i){auto serial=QString::number(serials[i],16).rightJustified(16,'0');out.push_back({(hf?QString("Airspy HF+ (modèle non précisé par l’énumération)"):QString("Airspy R2 / Mini (modèle non précisé par l’énumération)"))+" — "+serial,(hf?"airspyhf:":"airspy:")+serial});}if(diagnostics)*diagnostics<<(hf?"Airspy HF+":"Airspy R2/Mini")+QString(" : DLL chargée, %1 appareil(s)").arg(found);}catch(const std::exception& e){if(diagnostics)*diagnostics<<QString::fromUtf8(e.what());}return out;}
+SdrCapabilities NativeRadio::capabilities(QString key){if(key.startsWith("fcd:"))return FcdRadio::capabilities(key);try{Device device(key.startsWith("airspyhf:"));device.open(key);SdrCapabilities c;c.backend=device.hf?"Airspy HF+ natif — CF32, PPM logiciel":"Airspy natif — CF32, gain de linéarité (indice), PPM logiciel";c.rates=device.rates();c.rateMin=*std::min_element(c.rates.begin(),c.rates.end());c.rateMax=*std::max_element(c.rates.begin(),c.rates.end());c.ppm=true;c.agc=device.hf?device.lib.resolve("airspyhf_set_hf_agc")!=nullptr:true;if(!device.hf){c.frequencyMin=24000000;c.frequencyMax=1750000000;c.gains<<"Indice de linéarité";c.gainMax=21;}return c;}catch(const std::exception& e){SdrCapabilities c;c.error=QString::fromUtf8(e.what());return c;}}
+void NativeRadio::receive(const RadioConfig& config,std::atomic_bool& stopping,const std::function<void(QByteArray)>& samples,const std::function<void(quint32,quint32)>& tuned,const std::function<void(QString)>& diagnostic){
+ if(config.deviceKey.startsWith("fcd:")){FcdRadio::receive(config,stopping,samples,tuned);return;}
+ Context context{samples,&stopping};Device api(config.deviceKey.startsWith("airspyhf:"));api.open(config.deviceKey);auto rates=api.rates();if(!rates.contains(config.rate))throw std::runtime_error("Taux IQ non annoncé par le matériel Airspy ; ouvrir Capacités pour choisir un taux valide");if(config.bandwidth||!config.antenna.isEmpty())throw std::runtime_error("Bande matérielle et antenne non configurables par cet adaptateur Airspy");if(!api.hf&&(config.frequency<24000000||config.frequency>1750000000))throw std::runtime_error("Airspy R2/Mini : fréquence hors plage 24 à 1750 MHz");double corrected=config.frequency*(1+config.ppm/1e6);if(corrected<1||corrected>4294967295.)throw std::runtime_error("Fréquence corrigée PPM hors plage");check(api.fn<int(*)(void*,uint32_t)>("set_samplerate")(api.device,config.rate),"Taux IQ Airspy");check(api.fn<int(*)(void*,uint32_t)>("set_freq")(api.device,uint32_t(std::llround(corrected))),"Fréquence Airspy");
+ if(api.hf){auto agc=reinterpret_cast<int(*)(void*,uint8_t)>(api.lib.resolve("airspyhf_set_hf_agc"));if(agc)check(agc(api.device,config.automaticGain),"AGC Airspy HF+");else if(config.automaticGain)throw std::runtime_error("AGC absent de cette API HF+");}else{check(api.fn<int(*)(void*,int)>("set_sample_type")(api.device,0),"Format Airspy CF32");check(api.fn<int(*)(void*,uint8_t)>("set_lna_agc")(api.device,config.automaticGain),"AGC LNA Airspy");check(api.fn<int(*)(void*,uint8_t)>("set_mixer_agc")(api.device,config.automaticGain),"AGC mélangeur Airspy");if(!config.automaticGain){if(config.gain<0||config.gain>210)throw std::runtime_error("Indice de gain Airspy hors 0 à 21");check(api.fn<int(*)(void*,uint8_t)>("set_linearity_gain")(api.device,config.gain/10),"Linéarité Airspy");}}
+ if(api.hf)api.fn<int(*)(void*)>("stop");else api.fn<int(*)(void*)>("stop_rx");context.last=now();if(api.hf)check(api.fn<int(*)(void*,int(*)(HfTransfer*),void*)>("start")(api.device,hfCallback,&context),"Démarrage HF+");else check(api.fn<int(*)(void*,int(*)(Transfer*),void*)>("start_rx")(api.device,callback,&context),"Démarrage Airspy");api.streaming=true;tuned(config.frequency,config.rate);QElapsedTimer warning;warning.start();auto streaming=api.fn<int(*)(void*)>("is_streaming");while(!stopping){if(context.invalid)throw std::runtime_error("Tampon ou format Airspy invalide ; flux arrêté");if(streaming(api.device)<=0||now()-context.last>3000)throw std::runtime_error("Airspy : flux IQ interrompu ou clé débranchée");if(context.dropped&&warning.elapsed()>1000){diagnostic("Airspy : échantillons IQ perdus ; réduire le taux ou la charge CPU");context.dropped=0;warning.restart();}QThread::msleep(20);}
+}
+

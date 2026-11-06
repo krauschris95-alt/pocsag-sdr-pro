@@ -1,3 +1,7 @@
+## 0.1.17 — adaptateurs SDR et diagnostic Windows
+
+Seize suites CTest réussies : contrats natifs Airspy/HF+, HackRF signé et reconnexion, FUNcube HID/PCM simulé, contrat C Soapy et erreurs, diagnostic et identité persistante, plus la non-régression 0.1.16. Blog V4 physique : 93 s avec deux réaccords, SQLite, deux TXT, trois annonces SAPI et WAV ; puis Soapy RTL réel 30 s, neuf textes reçus, aucune erreur. Le bouton Tester IQ est vérifié sur le Blog V4 sans insertion dans la base utilisateur. Windows 11 26H2 relevé par Qt ; Windows 10 séparé non qualifié. [Qualification et limites](QUALIFICATION-0.1.17.md), [pilotes](SDR-COMPATIBILITY.md), [signature/SmartScreen](WINDOWS-SIGNING.md). Aucun certificat disponible, distribution non signée.
+
 ## 0.1.16 — fréquence cliquable et voix P0
 
 Douze suites CTest locales réussies et [12/12 sur GitHub Actions](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42175565917) (95,74 s), packaging x64 réussi, réaccord réel RTL-SDR dans les deux sens avec reprise IQ/décodage, voix locale et trois WAV pendant réception réduite, deux journaux TXT exacts. Préparation audio commune avec conservation intégrale des textes originaux. Captures Glacier/sombre aux facteurs Qt 100/125/150 %. Voir [qualification 0.1.16](QUALIFICATION-0.1.16.md), notamment limites de fréquence 32 bits et matériels non disponibles.
