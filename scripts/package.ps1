@@ -27,3 +27,5 @@ New-Item -ItemType Directory -Force (Join-Path $Destination "docs") | Out-Null
 Copy-Item docs/QUALIFICATION-0.1.19.md,docs/VALIDATION.md,docs/THIRD_PARTY.md (Join-Path $Destination "docs")
 
 Copy-Item docs/WINDOWS-SIGNING.md,docs/SDR-COMPATIBILITY.md (Join-Path $Destination "docs")
+# Synthetic French SAPI examples only; no received radio audio or user data.
+Copy-Item docs/qualification-0119/audio (Join-Path $Destination 'Exemples-voix-francaise') -Recurse -Force
