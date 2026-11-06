@@ -1,0 +1,40 @@
+{
+    "all_checks_passed": true,
+    "all_txt_exact": true,
+    "destinations": 2,
+    "duration_seconds": 93,
+    "iq_during_speech": true,
+    "isolated_data": true,
+    "legs": [
+        {
+            "decoder_frames": 121,
+            "frequency_hz": 169626000,
+            "iq_bytes": 14434304,
+            "live_iq": true
+        },
+        {
+            "decoder_frames": 8,
+            "frequency_hz": 169625000,
+            "iq_bytes": 14417920,
+            "live_iq": true
+        },
+        {
+            "decoder_frames": 46,
+            "frequency_hz": 169626000,
+            "iq_bytes": 14417920,
+            "live_iq": true
+        }
+    ],
+    "lower_synthetic_rows": 3,
+    "minimized": true,
+    "retune_ms": [
+        1538,
+        1557
+    ],
+    "sapi_completed": 3,
+    "sqlite_messages": 17,
+    "total_decoder_frames": 175,
+    "total_iq_bytes": 43270144,
+    "upper_rows": 17,
+    "wav_valid_same_preparation": true
+}

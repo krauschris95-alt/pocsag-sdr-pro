@@ -1,0 +1,6 @@
+PASS frequency mouse/keyboard, decimal input, fourteen integer steps/custom, preview/cancel/Enter, favorites CRUD/order/persistence, both themes/fonts, driver retune/failure rollback/IQ restart, selected receiver and history preservation
+Found Rafael Micro R828D tuner
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed
+[ERROR] rtlsdr_get_device_usb_strings(0) failed

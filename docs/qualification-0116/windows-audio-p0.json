@@ -1,0 +1,23 @@
+{
+    "actual_render_signal_detected": true,
+    "all_checks_passed": true,
+    "automatic_window_pipeline": false,
+    "baseline_rms": 0,
+    "captured_samples": 805440,
+    "channels": 2,
+    "completed_announcements": 1,
+    "endpoint_muted": false,
+    "endpoint_volume": 0.5899999737739563,
+    "error": "",
+    "french_selected": true,
+    "pager_diagnostics": [
+    ],
+    "sample_rate": 48000,
+    "sapi_completed": true,
+    "scope": "WASAPI default render endpoint, aggregate samples only; no microphone or audio file",
+    "speech_peak": 0.44985315203666687,
+    "speech_rms": 0.04520443346487291,
+    "wav_ready": 0,
+    "wav_without_local_voice": false,
+    "window_minimized": false
+}

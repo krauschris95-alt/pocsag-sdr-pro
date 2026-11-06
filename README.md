@@ -1,3 +1,11 @@
+## Version 0.1.16 — fréquence cliquable et annonce P0
+
+Cliquer sur l’encadré de fréquence en haut à droite, ou lui donner le focus puis Entrée/Espace : **Changer la fréquence**. Saisie MHz à six décimales, point ou virgule, flèches avec pas exact en Hz, quatorze pas prédéfinis et pas personnalisé. Six raccourcis, favoris supplémentaires, noms, ajout/modification/suppression et ordre mémorisés. Les flèches et favoris préparent une valeur ; **Appliquer** réaccorde le récepteur sélectionné, vérifie le pilote puis la reprise des IQ. En cas de refus, restauration de l’ancien accord lorsque possible, sinon arrêt avec erreur. Récepteur arrêté : préparation du prochain démarrage, sans activation. Aucune grille de canaux imposée.
+
+La voix locale et les nouveaux WAV utilisent la même préparation : **alias → premier code autonome `P0xx` → suite entière**, chiffres prononcés séparément. Exemple : `APPEL: 50263090555 MED, P002 - AGRESSION - BAGARRE, N5 0` devient « départ ambulance R-MED1. P zéro zéro deux, agression, bagarre, N cinq, zéro ». Sans P0 valide, alias puis message complet. Les messages ambigus/incomplets/binaires restent exclus de l’audio automatique. Voix et Pager restent indépendants ; aucun raccordement au serveur officiel ajouté.
+
+Les textes des tableaux, SQLite, TXT, profils, exports et le champ `text` JSON restent complets. Seul `utterance` contient la préparation vocale. Les anciens WAV ne sont pas réécrits. Thèmes Glacier/sombre, capcodes et historique conservés. [Qualification, captures et limites 0.1.16](docs/QUALIFICATION-0.1.16.md).
+
 ## Version 0.1.15 — Clair Professionnel — Bleu Glacier
 
 Nouveau thème clair fidèle à la maquette : deux tableaux à titres bleus, fond blanc alterné bleu pâle, alias colorés, état SDR/BCH et fréquence à droite. Les fenêtres secondaires utilisent aussi le thème clair. Dans **Affichage → Thème**, le sombre reste disponible ; **Taille du texte** propose Compacte, Normale et Grande. Les deux choix sont mémorisés. Le clair devient le défaut des configurations qui ne contiennent pas encore de choix de thème.

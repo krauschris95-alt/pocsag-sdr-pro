@@ -1,3 +1,7 @@
+## 0.1.16 — fréquence cliquable et voix P0
+
+Douze suites CTest réussies, réaccord réel RTL-SDR dans les deux sens avec reprise IQ/décodage, voix locale et trois WAV pendant réception réduite, deux journaux TXT exacts. Préparation audio commune avec conservation intégrale des textes originaux. Captures Glacier/sombre aux facteurs Qt 100/125/150 %. Voir [qualification 0.1.16](QUALIFICATION-0.1.16.md), notamment limites de fréquence 32 bits et matériels non disponibles.
+
 ## 0.1.15 — thème clair Bleu Glacier
 
 Onze suites de tests réussies (69,44 s). [Compilation et packaging GitHub Actions réussis](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42121747722), avec artefact téléchargeable. Palette claire/sombre, trois tailles de texte, conservation après redémarrage et captures Windows à facteurs Qt 100/125/150 %. Qualification détaillée, limites de résolution et rapport matériel dans [QUALIFICATION-0.1.15.md](QUALIFICATION-0.1.15.md).

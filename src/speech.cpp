@@ -1,3 +1,4 @@
+#include "announcement.h"
 #include "speech.h"
 #include <QMutexLocker>
 #include <stdexcept>
@@ -66,7 +67,7 @@ QVector<SpeechChoice> SpeechService::outputs(){
  return {};
 #endif
 }
-QString SpeechService::utterance(const SpeechJob& j){return j.alias.trimmed().isEmpty()?j.text:j.alias.trimmed()+". "+j.text;}
+QString SpeechService::utterance(const SpeechJob& j){return preparedAnnouncement(j.alias,j.text);}
 void SpeechService::configure(SpeechSettings s){QMutexLocker lock(&mutex_);s.volume=qBound(0,s.volume,100);s.rate=qBound(-10,s.rate,10);s.limit=qBound(1,s.limit,10000);settings_=s;if(!s.enabled){jobs_.clear();cancel_=true;}ready_.wakeAll();}
 bool SpeechService::enqueue(SpeechJob job){
  QMutexLocker lock(&mutex_);if(!settings_.enabled||closing_||job.text.trimmed().isEmpty()||seen_.contains(job.eventId)){emit diagnostic("Voix refusée : coupure="+QString::number(!settings_.enabled)+" ; doublon="+QString::number(seen_.contains(job.eventId))+" ; arrêt="+QString::number(closing_));return false;}

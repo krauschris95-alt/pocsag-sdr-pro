@@ -8,7 +8,7 @@ POCSAG SDR Pro 0.1.11 produit réellement des WAV PCM et des manifestes JSON loc
 
 Un message ALPHA ou NUMERIC accepté d’un capcode enregistré avec Actif ON et Pager ON crée une tâche persistante dans la même transaction SQLite que le message. Voix locale, affichage inférieur et TXT restent indépendants. Refus TONE/diagnostics conservé. Les tâches déjà autorisées gardent leur identité ; les modifications de capcode concernent les nouvelles arrivées. Un capcode non enregistré ou Pager OFF ne crée aucune tâche.
 
-Dossier et expiration capturés à l’arrivée. UUID de message dans le nom WAV ; jamais le seul capcode. Synthèse SAPI directe, mono 22 050 Hz / PCM 16 bits, sans capture des haut-parleurs ni Virtual Audio Cable. Alias, pause de 300 ms, message complet ; XML échappé.
+Dossier et expiration capturés à l’arrivée. UUID de message dans le nom WAV ; jamais le seul capcode. Synthèse SAPI directe, mono 22 050 Hz / PCM 16 bits, sans capture des haut-parleurs ni Virtual Audio Cable. Depuis 0.1.16 : préparation commune avec la voix locale, alias puis pause de 300 ms, premier code autonome P0xx et toute la suite, chiffres français séparés ; sans code valide, message complet. XML échappé. `text` reste original ; `utterance` porte exclusivement cette projection audio. Les anciens WAV/manifestes ne sont pas réécrits.
 
 ## Mode A — même ordinateur
 
