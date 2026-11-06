@@ -1,0 +1,79 @@
+{
+    "cases": [
+        {
+            "longest_low_level_seconds": 0.9462585034013605,
+            "mean_absolute_pcm": 876.3282265005129,
+            "name": "P002",
+            "original": "APPEL: 50263090555 MED, P002 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 7.693514739229025,
+            "utterance": "départ ambulance R-MED1. P zéro zéro deux, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 868.4570457798909,
+            "name": "P004",
+            "original": "APPEL: 50263090555 MED, P004 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 7.888480725623583,
+            "utterance": "départ ambulance R-MED1. P zéro zéro quatre, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 836.6965842487059,
+            "name": "P017",
+            "original": "APPEL: 50263090555 MED, P017 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 7.683492063492063,
+            "utterance": "départ ambulance R-MED1. P zéro dix-sept, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 832.6359166402945,
+            "name": "P026",
+            "original": "APPEL: 50263090555 MED, P026 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 7.7385034013605445,
+            "utterance": "départ ambulance R-MED1. P zéro vingt-six, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 833.6612824335026,
+            "name": "P039",
+            "original": "APPEL: 50263090555 MED, P039 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 7.788480725623582,
+            "utterance": "départ ambulance R-MED1. P zéro trente-neuf, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 839.0193843031124,
+            "name": "P069",
+            "original": "APPEL: 50263090555 MED, P069 - AGRESSION - BAGARRE, N5 0",
+            "seconds": 8.043537414965986,
+            "utterance": "départ ambulance R-MED1. P zéro soixante-neuf, agression, bagarre, N cinq, zéro",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9321541950113379,
+            "mean_absolute_pcm": 848.9742324840532,
+            "name": "nombres",
+            "original": "12 victimes, 25 ans, 125 mètres, 39 personnes. Rendez-vous à 18h30 au 12 rue Jean-Jaurès. Téléphone : 0471 12 34 56. Référence 0007. SMUR et CHU.",
+            "seconds": 24.941315192743765,
+            "utterance": "départ ambulance R-MED1. 12 victimes, 25 ans, 125 mètres, 39 personnes. Rendez-vous à dix-huit heures trente au 12 rue Jean-Jaurès. Téléphone : 0471 12 34 56. Référence 0007. SMUR et CHU.",
+            "wav_valid": true
+        },
+        {
+            "longest_low_level_seconds": 0.9462131519274376,
+            "mean_absolute_pcm": 857.4331955136637,
+            "name": "long",
+            "original": "APPEL: 123 MED, P039 - Intervention à 18h30, 12 rue Jean-Jaurès. Il y a 12 victimes et 39 personnes présentes. La victime a 25 ans. Le point de rendez-vous est à 125 mètres. Attendre le SMUR, puis transmettre le bilan complet. Fin du message de contrôle.",
+            "seconds": 27.411020408163264,
+            "utterance": "départ ambulance R-MED1. P zéro trente-neuf, intervention à dix-huit heures trente, 12 rue jean-jaurès. il y a 12 victimes et 39 personnes présentes. la victime a 25 ans. le point de rendez-vous est à 125 mètres. attendre le smur, puis transmettre le bilan complet. fin du message de contrôle.",
+            "wav_valid": true
+        }
+    ],
+    "french_selected": true,
+    "human_listening": "pending; WAV signal checks do not prove intelligibility",
+    "voice": "Microsoft Hortense Desktop - French"
+}

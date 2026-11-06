@@ -1,3 +1,7 @@
+## 0.1.19 — voix française
+
+17/17 tests locaux réussis ; huit WAV SAPI français réels, sortie audio Windows mesurée et P039 validé à l’écoute par l’utilisateur. Voir QUALIFICATION-0.1.19.md et qualification-0119/.
+
 ## 0.1.18 — spectre fixe −20 / −100 dBFS
 
 17/17 tests locaux (79,97 s), puis test renforcé de persistance dans deux processus Windows séparés. Réception Blog V4 réelle à 169,626 MHz, avant et après redémarrage : 45 s + 30 s, 659 contrôles de plage fixe réussis, 34 996 224 octets IQ et 420 trames, aucune erreur. Neuf graduations, palette bleue, contraste/luminosité/lissage restaurés, aucune modification des FFT brutes. [Qualification et captures](QUALIFICATION-0.1.18.md). Sources décodeur, capcodes, TXT, SQLite, voix et PrivateRadio inchangées.
@@ -169,3 +173,4 @@ Voir [qualification numérique et non-régression](QUALIFICATION-0.1.12.md). Les
 ## Version 0.1.13
 
 Voir [comparaison des versions, Base64 et limites du diagnostic SQLite](QUALIFICATION-0.1.13.md). La divergence entre l’image SQLite accessible et la fenêtre utilisateur reste non résolue ; aucune antériorité de l’événement signalé n’est affirmée.
+

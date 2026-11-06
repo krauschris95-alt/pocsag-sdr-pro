@@ -1,3 +1,7 @@
+## Version 0.1.19 — voix française
+
+Codes P0 prononcés en français (P039 : « P zéro trente-neuf »), nombres ordinaires sans épellation systématique, pauses naturelles et message de test modifiable. Préparation identique en local et WAV PrivateRadio ; originaux conservés. Voir [qualification](docs/QUALIFICATION-0.1.19.md).
+
 ## Version 0.1.18 — échelle fixe du spectre et waterfall bleu
 
 Le spectre utilise par défaut une échelle **fixe de −20 à −100 dBFS**, avec les deux bornes toujours graduées. Le mode automatique reste facultatif. Affichage → Réglages spectre / waterfall permet de régler la palette bleue, son contraste et sa luminosité, ainsi que le lissage temporel de la courbe cyan. Ces choix sont enregistrés immédiatement et restaurés au redémarrage.
@@ -187,3 +191,4 @@ python scripts/build_installer.py build-sdr-deps/nsis-source/nsis-3.12/makensis.
 ```
 
 Lire [la qualification 0.1.9](docs/QUALIFICATION-0.1.9.md), [les rapports historiques](docs/VALIDATION.md) et [les licences tierces](docs/THIRD_PARTY.md). Distinguer tests automatiques, références indépendantes, captures privées et essais RF. Windows 10, AMD, autres éditions Windows et H24 restent à qualifier ; aucune compatibilité universelle annoncée.
+
