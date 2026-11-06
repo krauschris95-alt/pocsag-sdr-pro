@@ -31,3 +31,14 @@ Après libération du RTL-SDR par l’utilisateur, **les deux sessions réussiss
 Total : 34 996 224 octets IQ et 420 trames du décodeur, aucune erreur de flux. Rapports `rtl-before-restart.json` et `rtl-after-restart.json`. Captures `spectrum-rtl-before-restart.png` et `spectrum-rtl-after-restart.png`, plus les deux fenêtres de réglages. Les captures ont été inspectées : −20 dBFS visible en haut, −100 dBFS visible sur la dernière graduation, cyan lisible et waterfall bleu. Le maximum FFT brut varie de −46,96 à −6,18 dBFS entre les instantanés, sans déplacer l’échelle. Une crête au-dessus de −20 est simplement coupée au bord du tracé fixe ; sa valeur brute n’est ni abaissée ni recalée artificiellement. Le waterfall est un historique de session et se remplit progressivement après chaque démarrage.
 
 La restriction de publication liée à l’essai réel est donc levée : réception et restauration après redémarrage sont maintenant vérifiées. Les bases et journaux de l’utilisateur n’ont pas été ouverts par ce banc ; son dossier contient uniquement des données de test isolées, exclues du paquet.
+
+### Distribution et GitHub Actions
+
+GitHub Actions [run 42211859108](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42211859108), commit 13cee84 : compilation Windows x64, **17/17 suites réussies**, déploiement et artefact réussis (6 min 38 s). Artefact 13499991598, digest SHA-256 `4c062cf66bcce3a957bc7d019cc6d7e04038d6fbaad3f4fa837342aab3ad7066`. Sortie des tests conservée dans `github-tests.txt`.
+
+Les paquets locaux livrés sont qualifiés séparément : ZIP extrait, CRC et empreintes des 252 fichiers vérifiés ; lancement sans Qt dans PATH ; essai RTL supplémentaire de 10 s (540 672 octets pour le spectre, sans erreur). Installateur : installation, lancement et désinstallation isolés réussis, 252 fichiers identiques, fichier TXT témoin préservé. Rapports `installer-test.json`, `portable-rtl.json`, `release-assets.json`. Ces archives locales ne sont pas présentées comme identiques octet par octet à l’artefact CI.
+
+ZIP : SHA-256 `9bf908a6440dfc48eaefb40bf84ff12dd1f67d3a38b3f1b78a128eed72b5163a`.
+Installateur : SHA-256 `9811c173c19f298e6467bfab79827b90878da36fe4d62f672fadf7a02fbac72b`.
+
+Les derniers ajouts de qualification sont documentaires ; ils ne changent aucun code applicatif depuis les essais matériels et CI. Livraison prévue sur la [préversion v0.1.18](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases/tag/v0.1.18).
