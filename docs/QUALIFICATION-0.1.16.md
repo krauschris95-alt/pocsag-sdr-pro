@@ -45,5 +45,19 @@ La réouverture du flux prend environ 1,5 s ici ; les messages transmis pendant 
 
 ## Livraison
 
-Résultats de packaging, empreintes et validation de l’installateur ajoutés après constitution des paquets. Les rapports historiques restent inchangés.
+Code applicatif : `167637b8d0a54f68720471c19f9b04d215de139c`. Le tag final ajoute les résultats de distribution, sans changer ce code. Bibliothèques Qt/RTL/Soapy/HackRF et sources/licences épinglées réutilisées de la distribution 0.1.15 qualifiée ; aucun pilote système installé ou remplacé.
+
+ZIP contrôlé par CRC, extrait dans `build-portable-0116`, 230 fichiers identiques par SHA-256 au staging. Démarrage réussi avec PATH Windows uniquement, puis réception RTL par l’exécutable portable dix secondes à 169,626 MHz : 540 672 octets de spectre reçus, aucune erreur pilote. Aucun message ALPHA/NUMERIC accepté pendant cette courte sonde ; la qualification du décodage et du réaccord repose sur l’essai de 93 secondes ci-dessus. Captures `portable.png` et `installed.png`.
+
+Installateur exécuté dans un dossier isolé du dépôt avec garde contre une installation utilisateur déjà enregistrée : installation, lancement et désinstallation code 0, 230 empreintes de fichiers conformes, TXT témoin conservé. La première commande de sonde portable utilisait `$LASTEXITCODE` sans attendre le processus GUI ; ce contrôle invalide du banc a été remplacé par `Start-Process -Wait -PassThru`, puis tous les contrôles ont réussi. Aucun changement du produit nécessaire.
+
+Empreintes des paquets locaux qualifiés (également dans `qualification-0116/release-assets.json`) :
+
+| Paquet | Octets | SHA-256 |
+| --- | ---: | --- |
+| `POCSAG-SDR-Pro-0.1.16-windows-x64.zip` | 56359384 | `077d49fa18243f50753d996e833cabe02a1a6d997482e390dc22a4a2f8ff3bc5` |
+| `POCSAG-SDR-Pro-0.1.16-windows-x64-setup.exe` | 49900620 | `6c2b99b7394b9f21443a58e386a91653bcc62a23ae2d8c414a624e926242952f` |
+
+L’empreinte de l’exécutable compilé est identique dans le staging, le ZIP extrait et l’installation. Le ZIP exclut les fichiers DB, IQ, RAW, WAV, MP4 et INI ; les seuls exemples textuels sont synthétiques. Les rapports historiques restent inchangés.
+
 
