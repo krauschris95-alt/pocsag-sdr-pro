@@ -1,0 +1,11 @@
+{
+  "P039_human_listening": "confirmed by user: correct pronunciation and complete sentence",
+  "numbers_and_long_human_listening": "not performed: user away from PC during playback",
+  "synthetic_wav_files": 8,
+  "french_voice": "Microsoft Hortense Desktop - French",
+  "local_tests": "17/17",
+  "github_tests": "17/17",
+  "portable_launch_exit": 0,
+  "portable_extracted_hashes_match": 275,
+  "user_data_modified": false
+}

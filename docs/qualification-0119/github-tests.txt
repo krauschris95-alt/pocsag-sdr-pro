@@ -1,0 +1,152 @@
+Windows x64
+Include synthetic French SAPI listening examples in Windows packages #61
+Re-run all jobs
+Summary
+All jobs
+build
+release
+Run details
+Usage
+Workflow file
+Lockfile
+Annotations
+1 warning
+build
+succeeded  in 5m 38s
+Set up job
+3s
+Run actions/checkout@v4
+5s
+Run actions/setup-python@v5
+0s
+Run jurplel/install-qt-action@v4
+44s
+Configure
+3s
+Build
+2m 13s
+Test
+1m 13s
+1
+Run ctest --test-dir build -C Release --output-on-failure
+
+14
+Internal ctest changing into directory: D:/a/pocsag-sdr-pro/pocsag-sdr-pro/build
+
+15
+Test project D:/a/pocsag-sdr-pro/pocsag-sdr-pro/build
+
+16
+      Start  1: decoder
+
+17
+ 1/17 Test  #1: decoder ..........................   Passed    0.11 sec
+
+18
+      Start  2: integration
+
+19
+ 2/17 Test  #2: integration ......................   Passed    2.61 sec
+
+20
+      Start  3: independent_reference
+
+21
+ 3/17 Test  #3: independent_reference ............   Passed    0.09 sec
+
+22
+      Start  4: speech_queue
+
+23
+ 4/17 Test  #4: speech_queue .....................   Passed    0.04 sec
+
+24
+      Start  5: receiver_reconnect_injected
+
+25
+ 5/17 Test  #5: receiver_reconnect_injected ......   Passed    8.87 sec
+
+26
+      Start  6: native_radio_injected
+
+27
+ 6/17 Test  #6: native_radio_injected ............   Passed    2.42 sec
+
+28
+      Start  7: soapy_adapter_injected
+
+29
+ 7/17 Test  #7: soapy_adapter_injected ...........   Passed    0.08 sec
+
+30
+      Start  8: hackrf_adapter_injected
+
+31
+ 8/17 Test  #8: hackrf_adapter_injected ..........   Passed    8.11 sec
+
+32
+      Start  9: sdr_device_manager
+
+33
+ 9/17 Test  #9: sdr_device_manager ...............   Passed    0.58 sec
+
+34
+      Start 10: capcode_save_regression
+
+35
+10/17 Test #10: capcode_save_regression ..........   Passed    1.36 sec
+
+36
+      Start 11: sqlite_storage_regression
+
+37
+11/17 Test #11: sqlite_storage_regression ........   Passed   13.40 sec
+
+38
+      Start 12: sqlite_snapshot_reproduction
+
+39
+12/17 Test #12: sqlite_snapshot_reproduction .....   Passed    0.06 sec
+
+40
+      Start 13: global_corrections
+
+41
+13/17 Test #13: global_corrections ...............   Passed   19.05 sec
+
+42
+      Start 14: pager_audio_contract
+
+43
+14/17 Test #14: pager_audio_contract .............   Passed    5.43 sec
+
+44
+      Start 15: spectrum_fixed_scale
+
+45
+15/17 Test #15: spectrum_fixed_scale .............   Passed    1.19 sec
+
+46
+      Start 16: presentation
+
+47
+16/17 Test #16: presentation .....................   Passed    3.37 sec
+
+48
+      Start 17: frequency_dialog_and_retune
+
+49
+17/17 Test #17: frequency_dialog_and_retune ......   Passed    5.76 sec
+
+Deploy
+1m 11s
+Run actions/upload-artifact@v4
+3s
+Post Run jurplel/install-qt-action@v4
+0s
+Post Run actions/setup-python@v5
+1s
+Post Run actions/checkout@v4
+1s
+Complete job
+0s

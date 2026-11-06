@@ -23,3 +23,17 @@ L’utilisateur confirme après lecture locale de P039 : « Oui, prononciation c
 ## Non-régression et distribution
 
 Le code SDR, décodeur, spectre, capcodes, stockage, journaux et transport PrivateRadio est inchangé. Les seules modifications de fenêtre principale sont les libellés de version. Le test vocal est accessible avant Enregistrer ; la sélection de voix, vitesse, volume et sortie conserve son mécanisme existant.
+
+Écoute complémentaire : l’utilisateur était absent pendant la diffusion des exemples nombres/adresse et long. Leur validation auditive humaine reste donc non effectuée ; les WAV sont fournis explicitement pour réécoute. La confirmation P039 reste acquise. Capture de la fenêtre compilée : `qualification-0119/speech-settings.png`, choix de voix/vitesse/volume/sortie conservés et message de test modifiable visible.
+
+## Qualification des paquets et CI
+
+GitHub Actions [42222051538](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42222051538), commit 162bb05 : compilation, **17/17 suites**, déploiement et artefact réussis en 5 min 41 s. Artefact 13503554109, SHA-256 `2e32ceb4619ab29c01e8af93736bd6fa98e36988b9f4650c1ba89e9acba9e09b`. Journal détaillé : `qualification-0119/github-tests.txt`.
+
+ZIP local : extraction et CRC vérifiés, empreintes des 275 fichiers identiques au dossier de distribution, démarrage réussi sans Qt dans le PATH (système Windows seul). Installateur local : installation, démarrage et désinstallation réussis en dossier isolé, 275 fichiers identiques, TXT témoin préservé (`installer-test.json`). Huit exemples disponibles dans `Exemples-voix-francaise/`. Ces paquets locaux qualifiés ne sont pas déclarés identiques octet par octet à l’artefact CI.
+
+Exécutable : SHA-256 `3022e8df43fa37ecfb4a0af73d00c8afe3f856ccbb868233bd6053e162bd9ec8`.
+ZIP : `c7c521f2e6b3c8ed903e9075d52c680cc0678c70735818889a1e9865b4d1a903`.
+Installateur : `9b70c2621634c82d25ec273d2c8cb20a196e9410c0f7929b0024b0eb347f4d2a`.
+
+Les ajouts après le commit 162bb05 sont uniquement des preuves et rapports. Aucune modification applicative après les essais. Publication : [v0.1.19](https://github.com/krauschris95-alt/pocsag-sdr-pro/releases/tag/v0.1.19).

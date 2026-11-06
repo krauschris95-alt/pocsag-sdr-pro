@@ -9,3 +9,7 @@ Les textes reçus restent inchangés dans les tableaux, SQLite, TXT et JSON. Auc
 Qualification : 17/17 tests locaux, véritables WAV produits par Microsoft Hortense Desktop, mesure de sortie Windows réussie et confirmation humaine de P039 (« trente-neuf », phrase complète). Huit exemples audio synthétiques sont joints dans les paquets. Voir docs/QUALIFICATION-0.1.19.md pour les limites et résultats détaillés.
 
 ZIP et installateur Windows x64 non signés ; empreintes SHA-256 jointes.
+
+[GitHub Actions](https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42222051538) : **17/17 suites réussies**, compilation et paquets générés. ZIP local extrait et vérifié (275 fichiers), installateur testé en installation/lancement/désinstallation isolés avec conservation d’un TXT témoin.
+
+**Écoute :** P039 validé par l’utilisateur. Les exemples nombres et message long sont techniquement vérifiés mais leur écoute humaine n’a pas été effectuée, l’utilisateur étant absent. Ils restent disponibles dans `Exemples-voix-francaise/`, avec les six codes demandés. [Rapport détaillé](https://github.com/krauschris95-alt/pocsag-sdr-pro/blob/main/docs/QUALIFICATION-0.1.19.md).
