@@ -1,0 +1,13 @@
+{
+  "run": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42197507018",
+  "source": "d773fe510a8f51f50ab6218ac73cd53027b93957",
+  "status": "success",
+  "ctest_passed": 16,
+  "ctest_failed": 0,
+  "test_step": "1m 20s",
+  "build_duration": "7m 15s",
+  "artifact": "https://github.com/krauschris95-alt/pocsag-sdr-pro/actions/runs/42197507018/artifacts/13492129705",
+  "artifact_digest": "6cf4af3ce23131e6c42323ddbd9f8ceb1b4073332fb1b3c30740afa35088031f",
+  "product_changes_since_application_source": false,
+  "release_binary_unchanged": true
+}
