@@ -123,7 +123,7 @@ std::optional<FlexPage> FlexBridge::parseValidatedJson(const QByteArray& line){
  const QString type=o.value("msg_type").toString();
  const QString text=o.value("message").toString();
  if(text.trimmed().isEmpty()&&type!="tone_only")return std::nullopt;
- if(type=="unknown"||type=="instruction"||type=="short_msg")return std::nullopt;
+ if(type!="numeric"&&type!="special_numeric"&&type!="alphanumeric"&&type!="binary"&&type!="numbered_numeric"&&type!="secure"&&type!="tone_only")return std::nullopt;
  return FlexPage{quint64(address),baud,levels,type,text};
 }
 void FlexBridge::parseLine(const QByteArray& line){
