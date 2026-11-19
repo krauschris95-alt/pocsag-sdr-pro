@@ -15,7 +15,7 @@ inline QString messageInspection(const QSqlQuery& q){
   const auto binary=pocsag::inspectBase64(q.value(0).toString().toStdString());
   if(binary.recognized){
    details+="\n\nDÉCODAGE BASE64 — ANALYSE LOCALE, SANS DÉCHIFFREMENT";
-   details+="\nLongueur décodée : "+QString::number(binary.byteCount)+" octets";
+   details+="\nLongueur décodée : "+QString::number(qulonglong(binary.byteCount))+" octets";
    details+="\nIdentification indicative : "+QString::fromStdString(binary.signature);
    details+="\nEntropie indicative : "+QString::number(binary.entropyBitsPerByte,'f',2)+" bits/octet (ne prouve pas un chiffrement)";
    details+="\nOctets en hexadécimal (aperçu) :\n"+QString::fromStdString(binary.hexPreview);
