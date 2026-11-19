@@ -8,6 +8,7 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <array>
 
@@ -28,6 +29,7 @@ public:
  FlexBridge(double iqRate, PageHandler onPage, ErrorHandler onError);
  ~FlexBridge();
  bool start();
+ static std::optional<FlexPage> parseValidatedJson(const QByteArray& line);
  void submit(const QByteArray& cu8);
  void stop();
 private:
