@@ -108,23 +108,26 @@ void FlexBridge::processIq(const QByteArray& cu8,QByteArray& pcm){
   }
  }
 }
-void FlexBridge::parseLine(const QByteArray& line){
+std::optional<FlexPage> FlexBridge::parseValidatedJson(const QByteArray& line){
  QJsonParseError error{};
  auto doc=QJsonDocument::fromJson(line,&error);
- if(error.error!=QJsonParseError::NoError||!doc.isObject())return;
+ if(error.error!=QJsonParseError::NoError||!doc.isObject())return std::nullopt;
  const auto o=doc.object();
- if(!o.contains("capcode")||!o.contains("msg_type")||!o.contains("baud")||!o.contains("level"))return;
- if(o.contains("k_ok")&&!o.value("k_ok").toBool())return;
- if(o.contains("sig_ok")&&!o.value("sig_ok").toBool())return;
+ if(!o.contains("capcode")||!o.contains("msg_type")||!o.contains("baud")||!o.contains("level"))return std::nullopt;
+ if(o.contains("k_ok")&&!o.value("k_ok").toBool())return std::nullopt;
+ if(o.contains("sig_ok")&&!o.value("sig_ok").toBool())return std::nullopt;
  const auto address=o.value("capcode").toDouble(-1);
- if(!std::isfinite(address)||address<0||address>4297068542.0||std::floor(address)!=address)return;
+ if(!std::isfinite(address)||address<0||address>4297068542.0||std::floor(address)!=address)return std::nullopt;
  const int baud=o.value("baud").toInt(),levels=o.value("level").toInt();
- if((baud!=1600&&baud!=3200)||(levels!=2&&levels!=4))return;
+ if((baud!=1600&&baud!=3200)||(levels!=2&&levels!=4))return std::nullopt;
  const QString type=o.value("msg_type").toString();
  const QString text=o.value("message").toString();
- if(text.trimmed().isEmpty()&&type!="tone_only")return;
- if(type=="unknown"||type=="instruction"||type=="short_msg")return;
- onPage_({quint64(address),baud,levels,type,text});
+ if(text.trimmed().isEmpty()&&type!="tone_only")return std::nullopt;
+ if(type=="unknown"||type=="instruction"||type=="short_msg")return std::nullopt;
+ return FlexPage{quint64(address),baud,levels,type,text};
+}
+void FlexBridge::parseLine(const QByteArray& line){
+ if(auto page=parseValidatedJson(line))onPage_(*page);
 }
 void FlexBridge::parseOutput(const QByteArray& bytes){
  outputLines_+=bytes;
