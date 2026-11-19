@@ -57,14 +57,14 @@ public:explicit Window(QString storageDirectory={},std::unique_ptr<SpeechBackend
 signals:void lowerFilterChanged(bool active);
 private:
  friend struct IntegrationChecks;
- QSqlDatabase db_;QSqlQueryModel *all_,*saved_;QTableView *allView_,*savedView_;Receiver radio_;
- QDoubleSpinBox *frequency_,*gain_,*ppm_;QComboBox *devices_,*baud_;QLabel *status_,*count_;QLineEdit *search_,*savedSearch_,*logPath_;QCheckBox *logging_,*generalCopy_;Spectrum* spectrum_;
+ QSqlDatabase db_;QSqlQueryModel *all_,*saved_,*flexModel_=nullptr;QTableView *allView_,*savedView_,*flexView_=nullptr;Receiver radio_;
+ QDoubleSpinBox *frequency_,*gain_,*ppm_;QComboBox *devices_,*baud_,*protocol_=nullptr;QLabel *status_,*count_,*protocolStatus_=nullptr;QLineEdit *search_,*savedSearch_,*logPath_;QCheckBox *logging_,*generalCopy_;Spectrum* spectrum_;
  int selectedBaud_=0;bool autoscroll_=true;
  QAction *allowAlpha_=nullptr,*allowNumeric_=nullptr,*allowTone_=nullptr,*allowDiagnostic_=nullptr;
  QComboBox *format_=nullptr,*step_=nullptr;
  QCheckBox *daily_=nullptr;QLineEdit *root_=nullptr,*profileName_=nullptr;QLabel* activePath_=nullptr;
  bool glacier_=true;int textSize_=1;QLabel *frequencyMeta_=nullptr,*presentationState_=nullptr;bool eventFilter(QObject* object,QEvent* event)override;void frequencyDialog();bool tuneSelected(quint32 hz,QString* error=nullptr);void resizeEvent(QResizeEvent* event)override;void adaptPresentation();void setupPresentation();void applyPresentation();void updatePresentationState();
- void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
+ void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void receivedFlex(quint64 address,int baud,int levels,QString type,QString text,quint32 frequency,QString receiver,QDateTime timestamp);void start(QString file={});
  void capcodes();void journal();void configureJournals(bool focusPermanent);void txtProfiles();void storageOptions();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
  void flushJournal();
  void setupOptions(QAction* start,QAction* stop,QAction* open,QAction* cap,QAction* log,QMenu* view,QMenu* help);
