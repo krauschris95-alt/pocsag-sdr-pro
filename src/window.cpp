@@ -114,19 +114,28 @@ void Window::receivedFlex(quint64 address,int baud,int levels,QString type,QStri
 void Window::flushJournal(){pumpMessages();if(journalWorker_&&!journalWorker_->flush(disabledTypes()))technical("Délai dépassé pour la file TXT ; les messages restent en SQLite");}
 void Window::refresh(){refreshHistory(false);}
 void Window::refreshHistory(bool insertsOnly){
+ if(historyMetadataReading_){historyMetadataAgain_=true;historyMetadataFull_|=!insertsOnly;return;}
  emit lowerFilterChanged(savedSearch_&&!savedSearch_->text().isEmpty());
  auto quote=[](QString value){value.replace("'","''");return value;};
  auto query=[&](bool saved,QString filter){QString select="SELECT printf('%07d',m.ric) AS Capcode,substr(m.timestamp,12,8) AS Heure,(substr(m.timestamp,9,2)||'/'||substr(m.timestamp,6,2)||'/'||substr(m.timestamp,1,4)) AS Date,'POCSAG' AS Mode,m.type AS Type,m.baud AS Vitesse,";if(saved)select+="c.alias AS Alias,";else select+="printf('%0.6f MHz',m.frequency/1000000.0) AS Fréquence,m.receiver AS Source,";select+="m.text AS Message FROM messages m LEFT JOIN capcodes c ON CAST(c.ric AS INTEGER)=CAST(m.ric AS INTEGER) WHERE 1=1 ";QStringList types{"'AMBIGUOUS'","'INCOMPLETE'"};if(allowAlpha_->isChecked())types<<"'ALPHA'";if(allowNumeric_->isChecked())types<<"'NUMERIC'";if(allowTone_->isChecked())types<<"'TONE'";if(allowDiagnostic_->isChecked())types<<"'DIAGNOSTIC'";select+=types.isEmpty()?"AND 0 ":"AND m.type IN ("+types.join(',')+") ";if(saved)select+="AND c.active=1 AND c.show_bottom=1 ";if(!filter.isEmpty()){filter=quote(filter);select+="AND (m.text LIKE '%"+filter+"%' OR printf('%07d',m.ric) LIKE '%"+filter+"%' OR c.alias LIKE '%"+filter+"%') ";}
  if(!saved){if(filterRic_&&!filterRic_->text().isEmpty())select+="AND m.ric="+QString::number(filterRic_->text().toUInt())+" ";if(filterAlias_&&!filterAlias_->text().isEmpty())select+="AND c.alias LIKE '%"+quote(filterAlias_->text())+"%' ";if(filterKeyword_&&!filterKeyword_->text().isEmpty())select+="AND m.text LIKE '%"+quote(filterKeyword_->text())+"%' ";if(filterFrequency_&&filterFrequency_->value()>0)select+="AND m.frequency="+QString::number(qRound64(filterFrequency_->value()*1e6))+" ";if(filterBaud_&&filterBaud_->currentIndex()>0)select+="AND m.baud="+filterBaud_->currentText()+" ";if(filterType_&&filterType_->currentIndex()>0)select+="AND m.type='"+filterType_->currentText()+"' ";if(filterFrom_){auto dt=QDateTime(filterFrom_->date(),filterFrom_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)>=julianday('"+dt.toString(Qt::ISODate)+"') ";}if(filterTo_){auto dt=QDateTime(filterTo_->date(),filterTo_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)<=julianday('"+dt.toString(Qt::ISODate)+"') ";}}return select+"ORDER BY m.id ASC";};
- QHash<QString,QColor> colors;
- QList<QVariantList> capcodes;
- QSqlQuery colorQuery("SELECT printf('%07d',ric),color,alias,active,show_bottom FROM capcodes ORDER BY ric",db_);
- while(colorQuery.next()){
-  colors.insert(colorQuery.value(0).toString(),QColor(colorQuery.value(1).toString()));
-  capcodes.append({colorQuery.value(0),colorQuery.value(1),colorQuery.value(2),colorQuery.value(3),colorQuery.value(4)});
- }
- if(capcodes!=historyCapcodes_){insertsOnly=false;historyCapcodes_=std::move(capcodes);}
- static_cast<MessageModel*>(all_)->colors=colors;static_cast<MessageModel*>(saved_)->colors=colors;
+ struct Metadata{QList<QVariantList> capcodes;QHash<QString,QColor> colors;QString error;};
+ auto read=[](const QSqlDatabase& db){
+  Metadata result;
+  QSqlQuery q(db);
+  if(q.exec("SELECT printf('%07d',ric),color,alias,active,show_bottom FROM capcodes ORDER BY ric"))
+   while(q.next()){
+    result.colors.insert(q.value(0).toString(),QColor(q.value(1).toString()));
+    result.capcodes.append({q.value(0),q.value(1),q.value(2),q.value(3),q.value(4)});
+   }
+  if(q.lastError().isValid())result.error=q.lastError().text();
+  return result;
+ };
+ auto apply=[this,insertsOnly,upper=query(false,search_->text()),lower=query(true,savedSearch_->text())](Metadata metadata)mutable{
+  if(!metadata.error.isEmpty()){technical("Lecture des capcodes : "+metadata.error);if(refreshTimer_)refreshTimer_->start(500);return;}
+  if(metadata.capcodes!=historyCapcodes_){insertsOnly=false;historyCapcodes_=std::move(metadata.capcodes);}
+  static_cast<MessageModel*>(all_)->colors=metadata.colors;
+  static_cast<MessageModel*>(saved_)->colors=metadata.colors;
  auto update=[this,insertsOnly](MessageModel* model,QTableView* view,const QString& sql){
   auto follow=[this,view]{auto bar=view->verticalScrollBar();return autoscroll_&&view->horizontalHeader()->sortIndicatorSection()<0&&bar->value()>=bar->maximum()-2;};
   auto wasFollowing=std::make_shared<bool>(false);
@@ -135,8 +144,22 @@ void Window::refreshHistory(bool insertsOnly){
   if(testStorage_&&!asyncHistory_){if(model->apply(sql,db_,check(),insertsOnly))completed();}
   else model->applyAsync(sql,db_,insertsOnly,check,completed);
  };
- update(static_cast<MessageModel*>(all_),allView_,query(false,search_->text()));
- update(static_cast<MessageModel*>(saved_),savedView_,query(true,savedSearch_->text()));
+ update(static_cast<MessageModel*>(all_),allView_,upper);
+ update(static_cast<MessageModel*>(saved_),savedView_,lower);
+ };
+ if(testStorage_&&!asyncHistory_){apply(read(db_));return;}
+ historyMetadataReading_=true;
+ auto watcher=new QFutureWatcher<Metadata>(this);
+ connect(watcher,&QFutureWatcher<Metadata>::finished,this,[this,watcher,apply]()mutable{
+  historyMetadataReading_=false;
+  if(!historyMetadataFull_)apply(watcher->result());
+  watcher->deleteLater();
+  if(historyMetadataAgain_){
+   bool full=historyMetadataFull_;historyMetadataFull_=false;historyMetadataAgain_=false;
+   refreshHistory(!full);
+  }
+ });
+ watcher->setFuture(QtConcurrent::run([file=db_.databaseName(),read]{return readHistoryDatabase<Metadata>(file,read);}));
 
 }
 void Window::copyTable(QTableView* view){QStringList lines;for(const auto& idx:view->selectionModel()->selectedRows()){QStringList cells;for(int c=0;c<view->model()->columnCount();++c)cells<<view->model()->index(idx.row(),c).data().toString();lines<<cells.join('\t');}QApplication::clipboard()->setText(lines.join('\n'));}

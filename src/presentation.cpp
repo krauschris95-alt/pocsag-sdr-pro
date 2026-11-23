@@ -42,7 +42,27 @@ void Window::applyPresentation(){
 }
 void Window::updatePresentationState(){
  if(frequencyMeta_){auto r=selectedRadio_?selectedRadio_:&radio_;QString baud=r->isRunning()?(r->config.baud?QString::number(r->config.baud):QString("AUTO")):baud_->currentText();const QString mode=r->isRunning()?(r->config.protocol==paging::SelectionMode::Auto?QString("AUTO"):r->config.protocol==paging::SelectionMode::Flex?QString("FLEX"):QString("POCSAG")):(protocol_?protocol_->currentText():QString("POCSAG"));frequencyMeta_->setText(mode=="FLEX"?"Mode : FLEX":"Mode : "+mode.section(" —",0,0)+"  |  POCSAG : "+baud+(baud=="AUTO"?QString{}:QString(" bauds")));}
- if(!presentationState_)return;QSqlQuery q(db_);bool available=q.exec("SELECT EXISTS(SELECT 1 FROM capcodes WHERE active=1 AND pager_enabled=1)")&&q.next();QStorageInfo storage(pagerSettings_.audioRoot);bool wav=QFileInfo(pagerSettings_.audioRoot).isWritable()&&storage.isValid()&&storage.isReady()&&storage.bytesAvailable()>16LL*1024*1024&&available&&q.value(0).toBool()&&pagerWorker_&&pagerWorker_->isRunning()&&!pagerSettings_.audioRoot.isEmpty();q.finish();QString path=QFileInfo(db_.databaseName()).absolutePath();presentationState_->setToolTip("Emplacement SQLite : "+path+"\nWAV/JSON : génération locale pour les capcodes actifs configurés ; aucun transport distant actif.");presentationState_->setText(QString("SQLite : %1   |   TXT : %2 / %3   |   WAV : %4   |   JSON : %4   |   Voix : %5").arg(available?"OK":"ERREUR",generalCopy_->isChecked()?"ON":"OFF",selectedLogging_->isChecked()?"ON":"OFF",wav?"ON":"OFF",speechSettings_.enabled?"ON":"OFF"));
+ if(!presentationState_||presentationReading_)return;
+ struct Status{bool eligible=false;QString error;};
+ const auto audio=pagerSettings_.audioRoot;
+ auto read=[audio](const QSqlDatabase& db){
+  Status result;QSqlQuery q(db);
+  if(!q.exec("SELECT EXISTS(SELECT 1 FROM capcodes WHERE active=1 AND pager_enabled=1)")||!q.next()){result.error=q.lastError().text();return result;}
+  if(!q.value(0).toBool()||audio.isEmpty())return result;
+  QStorageInfo storage(audio);
+  result.eligible=storage.isValid()&&storage.isReady()&&storage.bytesAvailable()>16LL*1024*1024&&QFileInfo(audio).isWritable();
+  return result;
+ };
+ auto display=[this](const Status& result){
+  bool wav=result.eligible&&pagerWorker_&&pagerWorker_->isRunning();
+  presentationState_->setToolTip("Emplacement SQLite : "+QFileInfo(db_.databaseName()).absolutePath()+"\nWAV/JSON : génération locale pour les capcodes actifs configurés ; aucun transport distant actif.");
+  presentationState_->setText(QString("SQLite : %1   |   TXT : %2 / %3   |   WAV : %4   |   JSON : %4   |   Voix : %5").arg(result.error.isEmpty()?"OK":"ERREUR",generalCopy_->isChecked()?"ON":"OFF",selectedLogging_->isChecked()?"ON":"OFF",wav?"ON":"OFF",speechSettings_.enabled?"ON":"OFF"));
+ };
+ if(testStorage_&&!asyncHistory_){display(read(db_));return;}
+ presentationReading_=true;
+ auto watcher=new QFutureWatcher<Status>(this);
+ connect(watcher,&QFutureWatcher<Status>::finished,this,[this,watcher,display]{presentationReading_=false;display(watcher->result());watcher->deleteLater();});
+ watcher->setFuture(QtConcurrent::run([file=db_.databaseName(),read]{return readHistoryDatabase<Status>(file,read);}));
 }
 
 void Window::resizeEvent(QResizeEvent* event){QMainWindow::resizeEvent(event);if(presentationState_)adaptPresentation();}

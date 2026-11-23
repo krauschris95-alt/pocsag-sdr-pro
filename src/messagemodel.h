@@ -8,6 +8,7 @@
 #include <QFont>
 #include <QHash>
 #include <functional>
+#include "historyreader.h"
 #include <QtConcurrent/QtConcurrentRun>
 #include <QFutureWatcher>
 #include <QUuid>
@@ -44,7 +45,7 @@ public:
  // A bounded visible window is not a retention limit: navigate across all 64-bit rows.
  qint64 totalRows()const{return totalRows_;}qint64 firstRow()const{return first_;}
  void showOlder(){move(qMax<qint64>(0,first_-windowRows_));}void showNewer(){move(qMin(qMax<qint64>(0,totalRows_-windowRows_),first_+windowRows_));}void showFirst(){move(0);}void showLast(){move(qMax<qint64>(0,totalRows_-windowRows_));}
- struct Snapshot{QVariant newest;qint64 rows=0;QString error;};
+ struct Snapshot{QVariant newest;qint64 rows=0;QString error;QStringList headers;};
  static Snapshot countRows(QSqlDatabase db,const QString& body,bool incremental,qint64 lastId){
   Snapshot result;
   if(!db.transaction()){result.error=db.lastError().text();return result;}
@@ -61,6 +62,13 @@ public:
   }
   if(q.lastError().isValid())result.error=q.lastError().text();
   q.finish();
+  if(!incremental&&result.error.isEmpty()){
+   if(q.exec(body+" LIMIT 0")){
+    const auto record=q.record();
+    for(int c=0;c<record.count();++c)result.headers<<record.fieldName(c);
+   }else result.error=q.lastError().text();
+   q.finish();
+  }
   if(!db.commit()&&result.error.isEmpty())result.error=db.lastError().text();
   return result;
  }
@@ -95,7 +103,7 @@ public:
   });
   auto body=query.left(query.lastIndexOf("ORDER BY"));
   watcher->setFuture(QtConcurrent::run([file=db.databaseName(),body,incremental,last=lastId_]{
-   return readOnly<Snapshot>(file,[&](QSqlDatabase db){return countRows(db,body,incremental,last);});
+   return readHistoryDatabase<Snapshot>(file,[&](QSqlDatabase db){return countRows(db,body,incremental,last);});
   }));
  }
 private:
@@ -103,24 +111,9 @@ private:
  quint64 revision_=0;
  QString requestedQuery_;
  std::function<void()> pending_;
- template<class Result,class Read>
- static Result readOnly(const QString& file,Read read){
-  auto name=QUuid::createUuid().toString();
-  Result result;
-  {
-   auto db=QSqlDatabase::addDatabase("QSQLITE",name);
-   db.setDatabaseName(file);
-   db.setConnectOptions("QSQLITE_OPEN_READONLY;QSQLITE_BUSY_TIMEOUT=100");
-   if(db.open())result=read(db);
-   else result.error=db.lastError().text();
-  }
-  QSqlDatabase::removeDatabase(name);
-  return result;
- }
  bool accept(const QString& query,const Snapshot& snapshot,bool followTail,bool incremental){
   if(!snapshot.error.isEmpty()){hasWatermark_=false;if(problem)problem(snapshot.error);return false;}
   const bool changed=query!=base_;
-  const QString body=query.left(query.lastIndexOf("ORDER BY"));
   const qint64 actual=(incremental?totalRows_:0)+snapshot.rows;
   lastId_=snapshot.newest.toLongLong();
   hasWatermark_=!snapshot.newest.isNull();
@@ -135,7 +128,7 @@ private:
     total_=visible;
     endInsertRows();
    }else if(!incremental){pages_.clear();order_.clear();if(total_)emit dataChanged(index(0,0),index(total_-1,headers_.size()-1));}}
-  else{beginResetModel();base_=query;first_=first;total_=visible;pages_.clear();order_.clear();QSqlQuery shape(db_);if(shape.exec(body+" LIMIT 0")){headers_.clear();auto record=shape.record();for(int i=0;i<record.count();++i)headers_<<record.fieldName(i);}shape.finish();endResetModel();}return true;
+  else{beginResetModel();base_=query;first_=first;total_=visible;pages_.clear();order_.clear();if(!incremental)headers_=snapshot.headers;endResetModel();}return true;
  }
 public:
  void sort(int column,Qt::SortOrder order)override{column_=column;sortOrder_=order;if(base_.isEmpty())return;move(column<0?qMax<qint64>(0,totalRows_-windowRows_):0);}
@@ -201,7 +194,7 @@ private:
    if(onPageReady)onPageReady();
   });
   watcher->setFuture(QtConcurrent::run([file,request]{
-   return readOnly<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,request);});
+   return readHistoryDatabase<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,request);});
   }));
  }
 public:
@@ -227,7 +220,7 @@ public:
    if(offset<result.rows.size())open(result.rows[offset].last());
   });
   watcher->setFuture(QtConcurrent::run([file,query]{
-   return readOnly<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,query);});
+   return readHistoryDatabase<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,query);});
   }));
  }
 private:
