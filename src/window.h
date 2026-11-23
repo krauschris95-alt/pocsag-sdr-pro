@@ -53,7 +53,7 @@ private:QVector<float> levels_,rawLevels_,averagePower_,waterfallDb_;QImage wate
 };
 class Window:public QMainWindow {
  Q_OBJECT
-public:explicit Window(QString storageDirectory={},std::unique_ptr<SpeechBackend> speechBackend={});~Window();
+public:explicit Window(QString storageDirectory={},std::unique_ptr<SpeechBackend> speechBackend={},bool asyncHistory=false);~Window();
 signals:void lowerFilterChanged(bool active);
 private:
  friend struct IntegrationChecks;
@@ -76,7 +76,7 @@ private:
  SpeechService speech_;SpeechSettings speechSettings_;std::unique_ptr<JournalWorker> journalWorker_;
  QTabWidget* tabs_=nullptr;QSplitter* messageSplit_=nullptr;QLabel* frequencyDisplay_=nullptr;
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;
- bool receiveWanted_=false;bool testStorage_=false;QTimer* refreshTimer_=nullptr;
+ bool receiveWanted_=false;bool testStorage_=false;bool asyncHistory_=false;QTimer* refreshTimer_=nullptr;
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
  void reloadDevices();void sdrDevices();void spectrumOptions();void storePreferences();QStringList disabledTypes()const;
  QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();

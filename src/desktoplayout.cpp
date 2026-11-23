@@ -8,7 +8,7 @@
 #include "soapyradio.h"
 #include "cpucaps.h"
 #include <QJsonDocument>
-void Window::scheduleRefresh(){if(testStorage_)refreshHistory(true);else if(!refreshTimer_->isActive())refreshTimer_->start(150);}
+void Window::scheduleRefresh(){if(testStorage_&&!asyncHistory_)refreshHistory(true);else if(!refreshTimer_->isActive())refreshTimer_->start(150);}
 void Window::storePreferences(){
  if(!tabs_)return;QSettings s(settingsFile_,QSettings::IniFormat);s.setValue("ui/splitter",messageSplit_->saveState());s.setValue("ui/layoutVersion",2);s.setValue("ui/geometry",saveGeometry());s.setValue("ui/allColumns",allView_->horizontalHeader()->saveState());s.setValue("ui/selectedColumns",savedView_->horizontalHeader()->saveState());s.setValue("ui/tab",tabs_->currentIndex());s.setValue("rx/frequency",frequency_->value());s.setValue("rx/gain",gain_->value());s.setValue("rx/ppm",ppm_->value());s.setValue("rx/baud",baud_->currentText());s.setValue("rx/device",devices_->currentData());s.setValue("ui/scroll",autoscroll_);s.setValue("voice/enabled",speechSettings_.enabled);s.setValue("voice/muted",!speechSettings_.enabled);s.setValue("voice/id",speechSettings_.voice);s.setValue("voice/output",speechSettings_.output);s.setValue("voice/volume",speechSettings_.volume);s.setValue("voice/rate",speechSettings_.rate);s.setValue("voice/limit",speechSettings_.limit);s.setValue("voice/dropOldest",speechSettings_.dropOldest);s.sync();
 }

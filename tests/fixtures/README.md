@@ -15,3 +15,5 @@ Provenance de l'outil : https://github.com/EliasOenal/multimon-ng
 Licence de la collection et des scripts de ce projet : GPL-3.0-or-later.
 Aucun code de multimon-ng n'est inclus dans le moteur de l'application et cet outil
 n'est pas nécessaire à la réception ou au fonctionnement du logiciel livré.
+
+The synthetic FLEX 1600-baud fixture flex-1600-test.pcmz contains 22,050 Hz signed little-endian PCM in Qt qCompress format. It was generated locally using multimon-ng gen-ng (source b5f7d71c5e9b5a76093ba55c515968dc40f92804) with arguments "-t raw -f 'POCSAG SDR PRO FLEX TEST' -F 123456". The regression test constructs 240 ksample/s CU8 in memory and checks the decoded address, content and modulation against those inputs.

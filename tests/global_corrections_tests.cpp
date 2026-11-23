@@ -13,7 +13,19 @@ struct IntegrationChecks{
  static void require(bool b,std::source_location where=std::source_location::current()){if(!b)throw std::runtime_error("global check line "+std::to_string(where.line()));}
  static qlonglong scalar(Window& w,QString sql){QSqlQuery q(sql,w.db_);require(q.next());return q.value(0).toLongLong();}
  static QByteArray bytes(QString path){QFile f(path);require(f.open(QIODevice::ReadOnly));return f.readAll();}
- static void drain(Window& w){QElapsedTimer t;t.start();do{w.pumpMessages();w.flushJournal();QApplication::processEvents();if(w.pendingMessages_.empty()&&scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")==0)return;QThread::msleep(5);}while(t.elapsed()<60000);require(false);}
+ static void drain(Window& w,std::source_location caller=std::source_location::current()){
+  QElapsedTimer stalled,total;
+  stalled.start();total.start();
+  qlonglong previous=-1;
+  do{
+   w.pumpMessages();w.flushJournal();QApplication::processEvents();
+   auto outstanding=scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")+qlonglong(w.pendingMessages_.size());
+   if(!outstanding)return;
+   if(previous<0||outstanding<previous){stalled.restart();previous=outstanding;}
+   QThread::msleep(5);
+  }while(stalled.elapsed()<60000&&total.elapsed()<600000);
+  throw std::runtime_error("journal drain at line "+std::to_string(caller.line())+" outstanding="+std::to_string(previous));
+ }
  static auto stamp(){return QDateTime::fromString("2026-11-05T11:11:33Z",Qt::ISODate);}
  static void receive(Window& w,uint ric,QString text="Texte complet synthétique"){w.received({ric,0,2400,"ALPHA",text.toStdString(),0},169626000,"synthetic",stamp());}
  static QString quote(QString s){s.replace("'","''");return "'"+s+"'";}
