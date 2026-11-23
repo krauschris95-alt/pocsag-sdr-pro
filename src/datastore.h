@@ -1,5 +1,7 @@
 #pragma once
 #include <QtCore>
+class QSqlDatabase;
+void backupBeforeSchemaUpgrade(const QSqlDatabase& db);
 struct StoreMigration {bool ok=false;QString error,backup,staging;};
 QString resolveDataStore(QString defaultDirectory);
 StoreMigration copyDataStore(QString source,QString destination,QString locatorFile);

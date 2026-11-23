@@ -5,6 +5,7 @@
 #include "pagerworker.h"
 #include "journalworker.h"
 #include <QMainWindow>
+#include <QThreadPool>
 #include <QSqlDatabase>
 #include <QSqlQueryModel>
 #include <QTableView>
@@ -80,7 +81,7 @@ private:
  QLineEdit *filterRic_=nullptr,*filterAlias_=nullptr,*filterKeyword_=nullptr;QDoubleSpinBox *filterFrequency_=nullptr;QDateTimeEdit *filterFrom_=nullptr,*filterTo_=nullptr;QComboBox *filterBaud_=nullptr,*filterType_=nullptr;
  QList<QVariantList> historyCapcodes_;bool receiveWanted_=false;bool testStorage_=false;bool asyncHistory_=false;QTimer* refreshTimer_=nullptr;
  void speechOptions();void replay(QTableView* view);void scheduleRefresh();void technical(QString message);void receiverOptions();void finishLayout();
- void reloadDevices();void sdrDevices();void spectrumOptions();void storePreferences();QStringList disabledTypes()const;
+ void reloadDevices();void sdrDevices();void spectrumOptions();void storePreferences();void savePreferenceSnapshot(bool background);QStringList disabledTypes()const;
  QLabel* sdrIndicator_=nullptr;void updateSdrIndicator();
  std::vector<std::unique_ptr<Receiver>> extraRadios_;Receiver* selectedRadio_=nullptr;QMenu* sourcesMenu_=nullptr;
  void connectReceiver(Receiver* receiver);void selectReceiver(Receiver* receiver);void stopReceivers();void additionalReceivers();
@@ -88,7 +89,7 @@ private:
  std::deque<QJsonObject> pendingMessages_;QString pendingDirectory_;bool draining_=false;QTimer* ingestionTimer_=nullptr;
  QCheckBox* selectedLogging_=nullptr;QLineEdit* selectedLogPath_=nullptr;QLabel* quality_=nullptr;QAction* voiceAction_=nullptr;QProgressBar* qualityBar_=nullptr;quint64 qualityWords_=0,qualityRejected_=0;QElapsedTimer qualityActivity_;
  quint64 acceptedFrames_=0,persistedFrames_=0,sqliteRetries_=0;QString lastStorageError_;
- QThread writerThread_;IngestionWriter* writer_=nullptr;size_t pendingWrites_=0;
+ QThreadPool diagnosticPool_,preferencePool_;QThread writerThread_;IngestionWriter* writer_=nullptr;size_t pendingWrites_=0;
  void startIngestionWriter();void stopIngestionWriter();void handleStoreResult(const QJsonObject&,const StoreOutcome&);void initIngestion();void pumpMessages();bool storePending(const QJsonObject& value);void storageProblem(QString text);
  void soapyOptions();
 };

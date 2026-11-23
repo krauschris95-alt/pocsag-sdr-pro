@@ -31,11 +31,13 @@ static QTableView* table(QSqlQueryModel* model){auto t=new MessageTable;
  QPointer<QTableView> view=t;
  static_cast<MessageModel*>(model)->onPageReady=[view]{if(view)view->viewport()->update();};t->setModel(model);t->setSelectionBehavior(QAbstractItemView::SelectRows);t->setSelectionMode(QAbstractItemView::ExtendedSelection);t->setAlternatingRowColors(true);t->verticalHeader()->hide();t->verticalHeader()->setDefaultSectionSize(22);t->horizontalHeader()->setStretchLastSection(true);t->horizontalHeader()->setSortIndicator(-1,Qt::AscendingOrder);t->setSortingEnabled(true);t->setWordWrap(false);t->setTextElideMode(Qt::ElideRight);t->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);t->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);t->setFont(QFont("Consolas",10));return t;}
 Window::Window(QString storageDirectory,std::unique_ptr<SpeechBackend> speechBackend,bool asyncHistory):speech_(std::move(speechBackend)){
+ diagnosticPool_.setMaxThreadCount(1);preferencePool_.setMaxThreadCount(1);
  setWindowTitle("POCSAG SDR Pro — 0.1.19");resize(1440,980);
  auto original=storageDirectory.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):storageDirectory;bootstrapFile_=QDir(original).filePath("storage-location.json");auto dir=storageDirectory.isEmpty()?resolveDataStore(original):storageDirectory;QDir().mkpath(dir);
  settingsFile_=dir+"/preferences.ini";testStorage_=!storageDirectory.isEmpty();asyncHistory_=asyncHistory||!testStorage_;
  RadioCatalog::configureRuntime(settingsFile_);
  db_=QSqlDatabase::addDatabase("QSQLITE");db_.setDatabaseName(dir+"/pocsag.db");if(!db_.open())throw std::runtime_error(db_.lastError().text().toStdString());
+ backupBeforeSchemaUpgrade(db_);
  sql("PRAGMA journal_mode=WAL");sql("PRAGMA busy_timeout=50");
  sql("CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY, timestamp TEXT, frequency INTEGER, baud INTEGER, ric INTEGER, function INTEGER, type TEXT, text TEXT, corrected INTEGER, receiver TEXT)");
  sql("CREATE INDEX IF NOT EXISTS messages_ric ON messages(ric)");
