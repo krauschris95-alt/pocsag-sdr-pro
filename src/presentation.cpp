@@ -48,12 +48,6 @@ void Window::updatePresentationState(){
 void Window::resizeEvent(QResizeEvent* event){QMainWindow::resizeEvent(event);if(presentationState_)adaptPresentation();}
 void Window::adaptPresentation(){
  bool compact=width()<1150;auto toolbar=findChild<QToolBar*>();if(!toolbar)return;
- // Keep the tuning control accessible when Windows scaling leaves the toolbar narrow.
- if(auto frequency=toolbar->findChild<QAction*>("frequencyCardAction")){
-  const auto actions=toolbar->actions();
-  if(width()<1500&&actions.first()!=frequency)toolbar->insertAction(actions.first(),frequency);
-  else if(width()>=1500&&actions.last()!=frequency)toolbar->addAction(frequency);
- }
  frequencyDisplay_->setMinimumWidth(205);
  toolbar->setStyleSheet(compact?"QToolBar{spacing:2px}":"");qualityBar_->setFixedWidth(compact?80:180);for(auto action:toolbar->actions()){if(auto button=qobject_cast<QToolButton*>(toolbar->widgetForAction(action))){button->setMinimumSize(compact?30:38,34);if(action==voiceAction_)button->setToolButtonStyle(compact?Qt::ToolButtonIconOnly:Qt::ToolButtonTextBesideIcon);}}
  frequencyDisplay_->setStyleSheet(QString("font-size:%1px;font-weight:600;background:transparent").arg(compact?22:24));status_->setMaximumWidth(compact?160:400);if(auto location=findChild<QLabel*>("storageLocation")){location->setMaximumWidth(compact?110:230);location->setVisible(width()>=900);}presentationState_->setStyleSheet(compact?"font-size:11px;padding:2px":"font-size:12px;padding:5px");

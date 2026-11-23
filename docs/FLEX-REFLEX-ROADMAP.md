@@ -29,3 +29,11 @@ La version publiée 0.1.19 décode **POCSAG uniquement** (512/1200/2400 bauds). 
 ## Conditions avant publication
 
 Ne pas fusionner une interface qui prétend recevoir FLEX/ReFLEX tant que les décodeurs ne fonctionnent pas réellement. Pas de modification de la production PrivateRadio. La version 0.1.19 demeure la base opérationnelle POCSAG.
+
+### Vérification des références ReFLEX du 23 novembre 2026
+
+Le WAP Forum identifie la spécification Motorola ReFLEX25 version 2.6 du 16 mars 1998 sous le numéro 68P81139B02-A. Cette référence bibliographique ne fournit ni les vecteurs radio ni leurs résultats attendus. [WAP Forum, Wireless Datagram Protocol](https://www.wapforum.org/what/technical/wdp-30-apr-98.pdf)
+
+L’inventaire local des noms de fichiers dans les espaces SDR et la recherche des termes ReFLEX et 68P81139 dans les métadonnées de captures n’ont identifié aucune paire signal/résultat ReFLEX. Les enregistrements IQ et WAV sans indication de protocole restent indéterminés. La recherche publique n’a pas fourni de capture ReFLEX de test avec résultat attendu et conditions de réutilisation vérifiables. Le sélecteur manuel ReFLEX reste indisponible.
+
+Le test flex_reference_iq vérifie une page FLEX synthétique sur deux niveaux à 1 600 bauds, de la démodulation IQ au texte reçu. Une qualification ReFLEX demandera une référence indépendante propre à ce protocole.

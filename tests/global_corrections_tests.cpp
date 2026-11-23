@@ -29,6 +29,60 @@ struct IntegrationChecks{
  static auto stamp(){return QDateTime::fromString("2026-11-05T11:11:33Z",Qt::ISODate);}
  static void receive(Window& w,uint ric,QString text="Texte complet synthétique"){w.received({ric,0,2400,"ALPHA",text.toStdString(),0},169626000,"synthetic",stamp());}
  static QString quote(QString s){s.replace("'","''");return "'"+s+"'";}
+ static void navigationLoad(int rows,int seconds){
+  QTemporaryDir dir;
+  Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+  w.generalCopy_->setChecked(true);
+  w.root_->setText(dir.filePath("text"));
+  w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(42,'TEST',1,1)");
+  w.sql(QString("WITH RECURSIVE n(x) AS(VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<%1) INSERT INTO messages(ric,type,text,baud,timestamp) SELECT 42,'ALPHA',printf('synthetic-%07d',x),1200,'2026-11-05T12:11:33+01:00' FROM n").arg(rows));
+  w.show();w.refresh();
+  auto waitUntil=[](auto condition,int timeout){
+   QElapsedTimer elapsed;elapsed.start();
+   while(!condition()&&elapsed.elapsed()<timeout){QApplication::processEvents(QEventLoop::AllEvents,10);QThread::msleep(2);}
+   return condition();
+  };
+  require(waitUntil([&]{return w.all_->rowCount()==rows&&w.saved_->rowCount()==rows;},60000));
+  int inserted=0,steps=0,dialogs=0;
+  qint64 gap=0,arrivalMax=0,actionMax=0;QString lastAction;
+  QTimer beat,actions,arrival,closeDetails;
+  QElapsedTimer clock;
+  QEventLoop loop;
+  QObject::connect(&beat,&QTimer::timeout,&loop,[&]{auto ms=clock.restart();gap=qMax(gap,ms);if(ms>150)std::cout<<"late_ms="<<ms<<" last_action="<<lastAction.toStdString()<<std::endl;});
+  QObject::connect(&arrival,&QTimer::timeout,&loop,[&]{QElapsedTimer t;t.start();lastAction="ingestion";receive(w,42,QString("incoming-%1").arg(++inserted));arrivalMax=qMax(arrivalMax,t.elapsed());});
+  QObject::connect(&actions,&QTimer::timeout,&loop,[&]{
+   QElapsedTimer t;t.start();lastAction="scroll-"+QString::number(steps%16);auto table=steps%2?w.savedView_:w.allView_;
+   auto bar=table->verticalScrollBar();
+   bar->setValue(int(qint64(bar->maximum())*((steps*37)%101)/100));
+   switch(steps++%16){
+   case 2: w.search_->setText("synthetic-0");break;
+   case 4: w.search_->clear();break;
+   case 6: table->sortByColumn(0,Qt::DescendingOrder);break;
+   case 8: table->sortByColumn(-1,Qt::AscendingOrder);break;
+   case 10:{
+    auto row=table->rowAt(10);
+    if(row<0)break;
+    auto idx=table->model()->index(row,0);
+    QTimer::singleShot(20,&w,[&]{if(auto dlg=qobject_cast<QDialog*>(QApplication::activeModalWidget())){++dialogs;dlg->accept();}});
+    table->doubleClicked(idx);
+    break;
+   }
+   default:break;
+   }
+   actionMax=qMax(actionMax,t.elapsed());
+  });
+  QObject::connect(&closeDetails,&QTimer::timeout,&loop,[&]{if(auto dlg=qobject_cast<QDialog*>(QApplication::activeModalWidget())){++dialogs;dlg->accept();}});closeDetails.start(30);clock.start();beat.start(10);arrival.start(400);actions.start(250);
+  QTimer::singleShot(seconds*1000,&loop,&QEventLoop::quit);
+  loop.exec();
+  beat.stop();actions.stop();arrival.stop();w.search_->clear();
+  w.allView_->sortByColumn(-1,Qt::AscendingOrder);w.savedView_->sortByColumn(-1,Qt::AscendingOrder);
+  drain(w);
+  require(scalar(w,"SELECT count(*) FROM messages")==rows+inserted);
+  require(scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=1")==inserted);
+  QSqlQuery integrity("PRAGMA integrity_check",w.db_);require(integrity.next()&&integrity.value(0)=="ok");integrity.finish();
+  std::cout<<"history_rows="<<rows<<" seconds="<<seconds<<" inserted="<<inserted<<" scroll_steps="<<steps<<" detail_dialogs="<<dialogs<<" max_ingestion_ms="<<arrivalMax<<" max_action_ms="<<actionMax<<" max_heartbeat_ms="<<gap<<std::endl;
+  require(dialogs>0&&inserted>0&&gap<200);
+ }
  static void restoredLiveOrder(){QTemporaryDir folder;{
  Window w(folder.path(),std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(42,'Test',1,1)");for(int i=0;i<90;++i)receive(w,42,QString("Ancien %1").arg(i));w.show();QApplication::processEvents();w.allView_->sortByColumn(8,Qt::AscendingOrder);w.savedView_->sortByColumn(1,Qt::DescendingOrder);w.storePreferences();}
  Window w(folder.path(),std::make_unique<FakeSpeech>());w.show();QApplication::processEvents();w.testStorage_=false;receive(w,42,"AAA NOUVEAU SYNTHETIQUE");{QEventLoop wait;QTimer::singleShot(300,&wait,&QEventLoop::quit);wait.exec();}QApplication::processEvents();require(w.all_->index(w.all_->rowCount()-1,8).data().toString()=="AAA NOUVEAU SYNTHETIQUE");require(w.saved_->index(w.saved_->rowCount()-1,7).data().toString()=="AAA NOUVEAU SYNTHETIQUE");require(w.allView_->verticalScrollBar()->value()>=w.allView_->verticalScrollBar()->maximum()-2);auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(!qa.isEmpty()){w.resize(1440,980);QApplication::processEvents();w.allView_->scrollToBottom();w.savedView_->scrollToBottom();QApplication::processEvents();w.grab().save(qa+"/live-order-restored.png");}
@@ -47,4 +101,4 @@ struct IntegrationChecks{
  static void storageCapture(){auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(qa.isEmpty())return;QTemporaryDir dir;Window w(dir.path(),std::make_unique<FakeSpeech>());QTimer::singleShot(100,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());require(d);d->grab().save(qa+"/data-storage.png");d->reject();});w.storageOptions();}
  static void migration(){QTemporaryDir folder;auto source=folder.path()+"/source",target=folder.path()+"/destination",locator=folder.path()+"/storage-location.json";{Window w(source,std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);receive(w,2006314,"MIGRATION SYNTHETIC");w.sql("INSERT INTO txt_profiles(name,path,enabled) VALUES('Conserver','D:/future.txt',0)");w.storePreferences();w.journalWorker_->shutdown();w.db_.close();}auto result=copyDataStore(source,target,locator);require(result.ok&&QFileInfo::exists(source+"/pocsag.db")&&QFileInfo::exists(result.backup+"/pocsag.db")&&resolveDataStore(folder.path())==target);{Window restored(target,std::make_unique<FakeSpeech>());require(scalar(restored,"SELECT count(*) FROM messages")==1&&scalar(restored,"SELECT count(*) FROM txt_profiles")==1);restored.journalWorker_->shutdown();restored.db_.close();}QString error;require(activateDataStore(source,target,locator,&error)&&resolveDataStore(folder.path())==source);auto before=bytes(locator);auto failure=copyDataStore(source,target,locator);require(!failure.ok&&bytes(locator)==before);require(!copyDataStore(source,source+"/child",locator).ok);{auto busy=QSqlDatabase::addDatabase("QSQLITE","migration-busy");busy.setDatabaseName(source+"/pocsag.db");require(busy.open());QSqlQuery hold(busy);require(hold.exec("BEGIN IMMEDIATE"));auto refused=copyDataStore(source,folder.path()+"/locked-copy",locator);require(!refused.ok&&bytes(locator)==before);require(busy.rollback());hold.finish();busy.close();}QFile impossible(folder.path()+"/locator-blocker");require(impossible.open(QIODevice::WriteOnly));impossible.write("KEEP");impossible.close();auto rollback=copyDataStore(source,folder.path()+"/copy-not-activated",impossible.fileName()+"/location.json");require(!rollback.ok&&QFileInfo::exists(source+"/pocsag.db")&&bytes(impossible.fileName())=="KEEP");}
 };
-int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);QApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);QApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--navigation-load")){int i=args.indexOf("--navigation-load");IntegrationChecks::navigationLoad(args.value(i+1).toInt(),args.value(i+2).toInt());return 0;}if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

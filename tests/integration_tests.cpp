@@ -22,7 +22,7 @@ struct IntegrationChecks {
  static void compactLayout(){
   QTemporaryDir dir;double savedRatio=0;{
    Window w(dir.path());w.resize(1440,900);w.show();QApplication::processEvents();
-   require(w.tabs_->count()==2&&w.spectrum_->parentWidget()==w.tabs_->widget(1));
+   require(w.tabs_->count()==3&&w.spectrum_->parentWidget()==w.tabs_->widget(1)&&w.tabs_->tabText(2)=="FLEX");
    auto sizes=w.messageSplit_->sizes();double ratio=double(sizes[0])/(sizes[0]+sizes[1]);require(ratio>.57&&ratio<.63);
    require(w.allView_->height()+w.savedView_->height()+72>w.centralWidget()->height()*.88);
    require(w.savedView_->height()>250&&w.allView_->height()>350);

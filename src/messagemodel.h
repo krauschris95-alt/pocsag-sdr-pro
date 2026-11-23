@@ -125,7 +125,8 @@ private:
   lastId_=snapshot.newest.toLongLong();
   hasWatermark_=!snapshot.newest.isNull();
   qint64 first=first_;if(changed||(followTail&&column_<0))first=qMax<qint64>(0,actual-windowRows_);first=qMin(first,qMax<qint64>(0,actual-windowRows_));int visible=int(qMin<qint64>(windowRows_,actual-first));bool append=!changed&&first==first_&&column_<0&&visible>=total_&&!headers_.isEmpty();totalRows_=actual;
-  if(!incremental||!append||visible!=total_)++generation_;
+  if(incremental&&!snapshot.rows)return true;
+  if(!incremental||!append)++generation_;
   if(append){if(visible>total_){beginInsertRows({},total_,visible-1);
     if(incremental){
      // Completed chronological pages retain their position after an append.
@@ -194,7 +195,7 @@ private:
    loading_=false;
    if(generation==generation_){
     if(!result.error.isEmpty()){if(problem)problem(result.error);return;}
-    cachePage(page,std::move(result.rows));
+    if(result.rows.size()==qMin(PageSize,total_-page*PageSize))cachePage(page,std::move(result.rows));
    }
    // A fast scroll may have requested a different page while this one was in flight.
    if(onPageReady)onPageReady();
@@ -205,4 +206,30 @@ private:
  }
 public:
  std::function<void()> onPageReady;
+ void inspectRow(int row,std::function<void(QVariant)> open){
+  if(row<0||row>=total_||inspecting_)return;
+  const int page=row/PageSize,offset=row%PageSize;
+  auto cached=pages_.constFind(page);
+  if(cached!=pages_.cend()&&offset<cached.value().size()){
+   open(cached.value()[offset].last());
+   return;
+  }
+  const QString file=db_.databaseName();
+  const auto query=pageQuery(page);
+  auto watcher=new QFutureWatcher<PageResult>(this);
+  inspecting_=true;
+  connect(watcher,&QFutureWatcher<PageResult>::finished,this,[this,watcher,file,offset,open]{
+   auto result=watcher->result();
+   watcher->deleteLater();
+   inspecting_=false;
+   if(db_.databaseName()!=file)return;
+   if(!result.error.isEmpty()){if(problem)problem(result.error);return;}
+   if(offset<result.rows.size())open(result.rows[offset].last());
+  });
+  watcher->setFuture(QtConcurrent::run([file,query]{
+   return readOnly<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,query);});
+  }));
+ }
+private:
+ bool inspecting_=false;
 };
