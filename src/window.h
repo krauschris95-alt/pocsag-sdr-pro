@@ -26,6 +26,8 @@
 #include <memory>
 #include <deque>
 #include <QJsonObject>
+class IngestionWriter;
+struct StoreOutcome;
 class QSettings;
 class Spectrum:public QWidget {
  Q_OBJECT
@@ -86,6 +88,7 @@ private:
  std::deque<QJsonObject> pendingMessages_;QString pendingDirectory_;bool draining_=false;QTimer* ingestionTimer_=nullptr;
  QCheckBox* selectedLogging_=nullptr;QLineEdit* selectedLogPath_=nullptr;QLabel* quality_=nullptr;QAction* voiceAction_=nullptr;QProgressBar* qualityBar_=nullptr;quint64 qualityWords_=0,qualityRejected_=0;QElapsedTimer qualityActivity_;
  quint64 acceptedFrames_=0,persistedFrames_=0,sqliteRetries_=0;QString lastStorageError_;
- void initIngestion();void pumpMessages();bool storePending(const QJsonObject& value);void storageProblem(QString text);
+ QThread writerThread_;IngestionWriter* writer_=nullptr;size_t pendingWrites_=0;
+ void startIngestionWriter();void stopIngestionWriter();void handleStoreResult(const QJsonObject&,const StoreOutcome&);void initIngestion();void pumpMessages();bool storePending(const QJsonObject& value);void storageProblem(QString text);
  void soapyOptions();
 };

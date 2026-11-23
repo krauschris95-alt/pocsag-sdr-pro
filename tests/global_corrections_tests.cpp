@@ -19,7 +19,7 @@ struct IntegrationChecks{
   qlonglong previous=-1;
   do{
    w.pumpMessages();w.flushJournal();QApplication::processEvents();
-   auto outstanding=scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")+qlonglong(w.pendingMessages_.size());
+   auto outstanding=scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")+qlonglong(w.pendingMessages_.size()+w.pendingWrites_);
    if(!outstanding)return;
    if(previous<0||outstanding<previous){stalled.restart();previous=outstanding;}
    QThread::msleep(5);
@@ -29,6 +29,54 @@ struct IntegrationChecks{
  static auto stamp(){return QDateTime::fromString("2026-11-05T11:11:33Z",Qt::ISODate);}
  static void receive(Window& w,uint ric,QString text="Texte complet synthétique"){w.received({ric,0,2400,"ALPHA",text.toStdString(),0},169626000,"synthetic",stamp());}
  static QString quote(QString s){s.replace("'","''");return "'"+s+"'";}
+ static void writerRecovery(){
+  QTemporaryDir dir;
+  const auto spool=dir.filePath("incoming-pending");
+  const auto txt=dir.filePath("test-journal.txt");
+  auto lock=QSqlDatabase::addDatabase("QSQLITE","writer-recovery-lock");
+  lock.setDatabaseName(dir.filePath("pocsag.db"));
+  QString retained;
+  QByteArray replay;
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   w.generalCopy_->setChecked(false);
+   w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom,txt_enabled,txt_path) VALUES(42,'Recovery',1,1,1,"+quote(txt)+")");
+   require(lock.open());
+   QSqlQuery hold(lock);require(hold.exec("BEGIN IMMEDIATE"));hold.finish();
+   for(int i=0;i<12;++i)receive(w,42,QString("worker-recovery-%1").arg(i));
+   QElapsedTimer wait;wait.start();
+   while((w.sqliteRetries_==0||QDir(spool).entryList({"*.json"},QDir::Files).size()!=12)&&wait.elapsed()<30000){
+    QApplication::processEvents(QEventLoop::AllEvents,10);QThread::msleep(5);
+   }
+   auto files=QDir(spool).entryList({"*.json"},QDir::Files);
+   require(w.sqliteRetries_>0&&files.size()==12&&scalar(w,"SELECT count(*) FROM messages")==0);
+   retained=QDir(spool).filePath(files.first());replay=bytes(retained);
+  }
+  require(QDir(spool).entryList({"*.json"},QDir::Files).size()==12);
+  require(lock.rollback());lock.close();
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   drain(w);
+   require(scalar(w,"SELECT count(DISTINCT event_uid) FROM messages")==12);
+   QSqlQuery ordered("SELECT text FROM messages ORDER BY id",w.db_);
+   for(int i=0;i<12;++i)require(ordered.next()&&ordered.value(0).toString()==QString("worker-recovery-%1").arg(i));
+   require(!ordered.next());ordered.finish();
+   require(scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=1")==12);
+   require(bytes(txt).count("worker-recovery-")==12);
+   require(QDir(spool).entryList({"*.json"},QDir::Files).isEmpty());
+  }
+  // Reproduce a crash between SQLite commit and deletion of the durable spool.
+  QFile duplicate(retained);require(duplicate.open(QIODevice::WriteOnly));require(duplicate.write(replay)==replay.size());duplicate.close();
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   drain(w);
+   require(scalar(w,"SELECT count(*) FROM messages")==12&&bytes(txt).count("worker-recovery-")==12);
+   QSqlQuery q("PRAGMA integrity_check",w.db_);require(q.next()&&q.value(0)=="ok");
+   require(QDir(spool).entryList({"*.json"},QDir::Files).isEmpty());
+  }
+  lock=QSqlDatabase();QSqlDatabase::removeDatabase("writer-recovery-lock");
+  std::cout<<"PASS writer lock, ordered replay after shutdown, committed spool deduplication, 12 exact TXT deliveries and SQLite integrity"<<std::endl;
+ }
  static void navigationLoad(int rows,int seconds){
   QTemporaryDir dir;
   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
@@ -101,4 +149,16 @@ struct IntegrationChecks{
  static void storageCapture(){auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(qa.isEmpty())return;QTemporaryDir dir;Window w(dir.path(),std::make_unique<FakeSpeech>());QTimer::singleShot(100,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());require(d);d->grab().save(qa+"/data-storage.png");d->reject();});w.storageOptions();}
  static void migration(){QTemporaryDir folder;auto source=folder.path()+"/source",target=folder.path()+"/destination",locator=folder.path()+"/storage-location.json";{Window w(source,std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);receive(w,2006314,"MIGRATION SYNTHETIC");w.sql("INSERT INTO txt_profiles(name,path,enabled) VALUES('Conserver','D:/future.txt',0)");w.storePreferences();w.journalWorker_->shutdown();w.db_.close();}auto result=copyDataStore(source,target,locator);require(result.ok&&QFileInfo::exists(source+"/pocsag.db")&&QFileInfo::exists(result.backup+"/pocsag.db")&&resolveDataStore(folder.path())==target);{Window restored(target,std::make_unique<FakeSpeech>());require(scalar(restored,"SELECT count(*) FROM messages")==1&&scalar(restored,"SELECT count(*) FROM txt_profiles")==1);restored.journalWorker_->shutdown();restored.db_.close();}QString error;require(activateDataStore(source,target,locator,&error)&&resolveDataStore(folder.path())==source);auto before=bytes(locator);auto failure=copyDataStore(source,target,locator);require(!failure.ok&&bytes(locator)==before);require(!copyDataStore(source,source+"/child",locator).ok);{auto busy=QSqlDatabase::addDatabase("QSQLITE","migration-busy");busy.setDatabaseName(source+"/pocsag.db");require(busy.open());QSqlQuery hold(busy);require(hold.exec("BEGIN IMMEDIATE"));auto refused=copyDataStore(source,folder.path()+"/locked-copy",locator);require(!refused.ok&&bytes(locator)==before);require(busy.rollback());hold.finish();busy.close();}QFile impossible(folder.path()+"/locator-blocker");require(impossible.open(QIODevice::WriteOnly));impossible.write("KEEP");impossible.close();auto rollback=copyDataStore(source,folder.path()+"/copy-not-activated",impossible.fileName()+"/location.json");require(!rollback.ok&&QFileInfo::exists(source+"/pocsag.db")&&bytes(impossible.fileName())=="KEEP");}
 };
-int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);QApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--navigation-load")){int i=args.indexOf("--navigation-load");IntegrationChecks::navigationLoad(args.value(i+1).toInt(),args.value(i+2).toInt());return 0;}if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+class MeasuredApplication:public QApplication{
+public:
+ using QApplication::QApplication;
+ bool notify(QObject* object,QEvent* event)override{
+  if(!qEnvironmentVariableIsSet("POCSAG_PROFILE_HISTORY")||QThread::currentThread()!=thread())return QApplication::notify(object,event);
+  QByteArray type=object->metaObject()->className();
+  auto name=object->objectName();auto kind=event->type();QElapsedTimer t;t.start();
+  bool ok=QApplication::notify(object,event);
+  if(t.elapsed()>100)std::cout<<"gui_event_ms="<<t.elapsed()<<" receiver="<<type.constData()<<" name="<<name.toStdString()<<" event="<<kind<<std::endl;
+  return ok;
+ }
+};
+int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);MeasuredApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--writer-recovery")){IntegrationChecks::writerRecovery();return 0;}if(args.contains("--navigation-load")){int i=args.indexOf("--navigation-load");IntegrationChecks::navigationLoad(args.value(i+1).toInt(),args.value(i+2).toInt());return 0;}if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

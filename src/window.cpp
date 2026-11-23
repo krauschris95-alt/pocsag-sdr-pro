@@ -91,7 +91,7 @@ Window::Window(QString storageDirectory,std::unique_ptr<SpeechBackend> speechBac
  initIngestion();
  setupPresentation();
 }
-Window::~Window(){receiveWanted_=false;stopReceivers();QCoreApplication::sendPostedEvents(this,QEvent::MetaCall);pumpMessages();speech_.shutdown();if(pagerWorker_)pagerWorker_->shutdown();if(journalWorker_)journalWorker_->shutdown();storePreferences();saveOptions();QSettings s;s.setValue("frequency",frequency_->value());s.setValue("gain",gain_->value());s.setValue("ppm",ppm_->value());s.setValue("log",logPath_->text());s.setValue("logging",logging_->isChecked());s.setValue("generalCopy",generalCopy_->isChecked());s.setValue("geometry",saveGeometry());}
+Window::~Window(){receiveWanted_=false;stopReceivers();QCoreApplication::sendPostedEvents(this,QEvent::MetaCall);stopIngestionWriter();pumpMessages();speech_.shutdown();if(pagerWorker_)pagerWorker_->shutdown();if(journalWorker_)journalWorker_->shutdown();storePreferences();saveOptions();QSettings s;s.setValue("frequency",frequency_->value());s.setValue("gain",gain_->value());s.setValue("ppm",ppm_->value());s.setValue("log",logPath_->text());s.setValue("logging",logging_->isChecked());s.setValue("generalCopy",generalCopy_->isChecked());s.setValue("geometry",saveGeometry());}
 void Window::failure(QString message){technical(message);}
 void Window::start(QString file){
  if(file.isEmpty()&&devices_->currentIndex()<0){technical("Aucun SDR accessible : vérifier le pilote Windows, les modules et les autres applications utilisant la clé");return;}receiveWanted_=true;radio_.stop();selectedBaud_=baud_->currentText().toInt();

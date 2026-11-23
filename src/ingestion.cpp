@@ -15,22 +15,130 @@ void check(QSqlQuery& q){if(!q.exec())throw std::runtime_error(q.lastError().tex
 QJsonObject encode(const pocsag::Message& m){return {{"ric",double(m.ric)},{"function",m.function},{"baud",m.baud},{"type",QString::fromStdString(m.type)},{"text",QString::fromStdString(m.text)},{"corrected",m.corrected},{"raw",QString::fromStdString(m.rawBits)},{"alpha",QString::fromStdString(m.alpha)},{"numeric",QString::fromStdString(m.numeric)},{"status",QString::fromStdString(m.status)},{"alphaValid",m.alphaValid},{"rawWords",QString::fromStdString(m.rawWords)},{"complete",m.complete},{"termination",QString::fromStdString(m.termination)}};}
 pocsag::Message decode(QJsonObject o){pocsag::Message m{quint32(o["ric"].toDouble()),o["function"].toInt(),o["baud"].toInt(),o["type"].toString().toStdString(),o["text"].toString().toStdString(),o["corrected"].toInt()};m.rawBits=o["raw"].toString().toStdString();m.alpha=o["alpha"].toString().toStdString();m.numeric=o["numeric"].toString().toStdString();m.status=o["status"].toString().toStdString();m.alphaValid=o["alphaValid"].toBool(true);m.rawWords=o["rawWords"].toString().toStdString();m.complete=o["complete"].toBool(true);m.termination=o["termination"].toString("boundary").toStdString();return m;}
 }
-void Window::storageProblem(QString text){if(text!=lastStorageError_){technical("Stockage différé : "+text+" — message conservé dans la file locale");lastStorageError_=text;}}
-void Window::initIngestion(){pendingDirectory_=QFileInfo(db_.databaseName()).absolutePath()+"/incoming-pending";QDir().mkpath(pendingDirectory_);for(auto name:QDir(pendingDirectory_).entryList({"*.json"},QDir::Files,QDir::Name)){QFile f(QDir(pendingDirectory_).filePath(name));if(f.open(QIODevice::ReadOnly)){QJsonParseError error;auto doc=QJsonDocument::fromJson(f.readAll(),&error);if(error.error==QJsonParseError::NoError&&doc.isObject())pendingMessages_.push_back(doc.object());else technical("File de réception illisible conservée : "+name);}}
- std::stable_sort(pendingMessages_.begin(),pendingMessages_.end(),[](const auto& a,const auto& b){if(a["timestamp"]==b["timestamp"])return a["sequence"].toDouble()<b["sequence"].toDouble();return a["timestamp"].toString()<b["timestamp"].toString();});
- ingestionTimer_=new QTimer(this);connect(ingestionTimer_,&QTimer::timeout,this,&Window::pumpMessages);ingestionTimer_->start(200);auto health=new QTimer(this);connect(health,&QTimer::timeout,this,[this]{auto r=selectedRadio_?selectedRadio_:&radio_;technical(QString("Chaîne réception : IQ=%1 octets ; décodeur=%2 trames ; SQLite=%3 insertions ; réception en attente=%4 ; tableaux=%5/%6 lignes").arg(r->iqBytes()).arg(r->decodedFrames()).arg(persistedFrames_).arg(pendingMessages_.size()).arg(all_->rowCount()).arg(saved_->rowCount()));});health->start(60000);}
-void Window::received(pocsag::Message m,quint32 frequency,QString receiver,QDateTime timestamp){QElapsedTimer latency;latency.start();if(!timestamp.isValid())timestamp=QDateTime::currentDateTimeUtc();if(!frequency)frequency=radio_.config.frequency;if(receiver.isEmpty())receiver=radio_.config.file.isEmpty()?devices_->currentText():radio_.config.file;
- auto id=QUuid::createUuid().toString(QUuid::WithoutBraces);QStringList disabled=disabledTypes();if(m.rawBits.empty()&&disabled.contains(QString::fromStdString(m.type)))return;QJsonObject value{{"id",id},{"sequence",double(acceptedFrames_)},{"message",encode(m)},{"frequency",double(frequency)},{"source",receiver},{"timestamp",timestamp.toUTC().toString(Qt::ISODateWithMs)},{"interpretation",format_->currentText()},{"disabled",QJsonArray::fromStringList(disabled)},{"general",generalCopy_->isChecked()},{"selected",selectedLogging_->isChecked()},{"generalPath",generalJournalPath(timestamp)},{"selectedPath",selectedLogPath_->text()},{"pagerRoot",pagerSettings_.audioRoot},{"pagerExpirySeconds",pagerSettings_.expirySeconds}};
- // Atomic spool precedes SQLite. A temporary database lock cannot discard an accepted frame.
- const auto preparedMs=latency.elapsed();QSaveFile file(QDir(pendingDirectory_).filePath(id+".json"));auto bytes=QJsonDocument(value).toJson(QJsonDocument::Compact);if(!file.open(QIODevice::WriteOnly)||file.write(bytes)!=bytes.size()||!file.commit())technical("Spool de réception indisponible : "+file.errorString()+" — message conservé en mémoire seulement jusqu’au retour du stockage");const auto spooledMs=latency.elapsed();pendingMessages_.push_back(value);++acceptedFrames_;pumpMessages();
- if(qEnvironmentVariableIsSet("POCSAG_PROFILE_HISTORY")&&latency.elapsed()>100)
-  qInfo()<<"receive_ms"<<latency.elapsed()<<"prepare_ms"<<preparedMs<<"spool_ms"<<spooledMs-preparedMs<<"store_ms"<<latency.elapsed()-spooledMs;
-}
-void Window::pumpMessages(){if(draining_)return;draining_=true;QElapsedTimer slice;slice.start();int batch=0;while(!pendingMessages_.empty()&&batch++<32&&(batch==1||slice.elapsed()<12)){auto value=pendingMessages_.front();if(!storePending(value))break;QFile::remove(QDir(pendingDirectory_).filePath(value["id"].toString()+".json"));pendingMessages_.pop_front();}draining_=false;}
-bool Window::storePending(const QJsonObject& value){QSqlQuery begin(db_);if(!begin.exec("BEGIN IMMEDIATE")){++sqliteRetries_;storageProblem(begin.lastError().text());return false;}begin.finish();try{
- QSqlQuery seen(db_);seen.prepare("SELECT id FROM messages WHERE event_uid=?");seen.addBindValue(value["id"].toString());check(seen);bool exists=seen.next();seen.finish();if(exists){if(!db_.commit())throw std::runtime_error(db_.lastError().text().toStdString());return true;}
- auto m=decode(value["message"].toObject());QString alias,directPath,mode=value["interpretation"].toString();bool selected=false,voice=false,pager=false,registered=false;QSqlQuery cap(db_);cap.prepare("SELECT alias,interpretation,active,txt_enabled,voice_enabled,txt_path,pager_enabled FROM capcodes WHERE CAST(ric AS INTEGER)=?");cap.addBindValue(m.ric);check(cap);if(cap.next()){registered=true;alias=cap.value(0).toString();if(cap.value(1).toString()!="INHERIT"&&cap.value(1).toString()!="AUTO")mode=cap.value(1).toString();selected=cap.value(2).toBool()&&cap.value(3).toBool();voice=cap.value(2).toBool()&&cap.value(4).toBool();directPath=cap.value(5).toString();pager=cap.value(2).toBool()&&cap.value(6).toBool();}cap.finish();if(!m.rawBits.empty())m=pocsag::interpret(std::move(m),mode.toStdString());bool ignored=false;for(auto t:value["disabled"].toArray())if(t.toString()==QString::fromStdString(m.type)&&m.type=="TONE")ignored=true;if(ignored){db_.rollback();return true;}
+struct StoreOutcome{
+ QString error;
+ bool inserted=false,pager=false,voice=false,registered=false;
+ quint32 ric=0;
+ QString type,alias,speech;
+};
+static StoreOutcome persistMessage(QSqlDatabase& db_,const QJsonObject& value){QSqlQuery begin(db_);if(!begin.exec("BEGIN IMMEDIATE")){return {begin.lastError().text()};}begin.finish();try{
+ QSqlQuery seen(db_);seen.prepare("SELECT id FROM messages WHERE event_uid=?");seen.addBindValue(value["id"].toString());check(seen);bool exists=seen.next();seen.finish();if(exists){if(!db_.commit())throw std::runtime_error(db_.lastError().text().toStdString());return {};}
+ auto m=decode(value["message"].toObject());QString alias,directPath,mode=value["interpretation"].toString();bool selected=false,voice=false,pager=false,registered=false;QSqlQuery cap(db_);cap.prepare("SELECT alias,interpretation,active,txt_enabled,voice_enabled,txt_path,pager_enabled FROM capcodes WHERE CAST(ric AS INTEGER)=?");cap.addBindValue(m.ric);check(cap);if(cap.next()){registered=true;alias=cap.value(0).toString();if(cap.value(1).toString()!="INHERIT"&&cap.value(1).toString()!="AUTO")mode=cap.value(1).toString();selected=cap.value(2).toBool()&&cap.value(3).toBool();voice=cap.value(2).toBool()&&cap.value(4).toBool();directPath=cap.value(5).toString();pager=cap.value(2).toBool()&&cap.value(6).toBool();}cap.finish();if(!m.rawBits.empty())m=pocsag::interpret(std::move(m),mode.toStdString());bool ignored=false;for(auto t:value["disabled"].toArray())if(t.toString()==QString::fromStdString(m.type)&&m.type=="TONE")ignored=true;if(ignored){db_.rollback();return {};}
  auto local=QDateTime::fromString(value["timestamp"].toString(),Qt::ISODateWithMs).toTimeZone(QTimeZone("Europe/Brussels"));QSqlQuery insert(db_);insert.prepare("INSERT INTO messages(timestamp,frequency,baud,ric,function,type,text,corrected,receiver,event_uid,raw_bits,alpha_candidate,numeric_candidate,decode_status,interpretation_policy,termination,payload_complete,raw_codewords,capture_origin) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");for(auto v:QVariantList{local.toString(Qt::ISODateWithMs),value["frequency"].toDouble(),m.baud,m.ric,m.function,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,value["source"].toString(),value["id"].toString(),QString::fromStdString(m.rawBits),QString::fromStdString(m.alpha),QString::fromStdString(m.numeric),QString::fromStdString(m.status),mode,QString::fromStdString(m.termination),m.complete,QString::fromStdString(m.rawWords),m.rawBits.empty()&&m.rawWords.empty()?QString("source-sans-brut"):QString("radio-brut-v1")})insert.addBindValue(v);check(insert);auto messageId=insert.lastInsertId();insert.finish();
  QMap<QString,QString> paths;auto route=[&](QString path){path=normalizedTxtPath(path);if(!path.isEmpty())paths.insert(txtPathKey(path),QFileInfo(path).absoluteFilePath());};if(value["general"].toBool())route(value["generalPath"].toString());if(selected){if(!directPath.isEmpty())route(directPath);else if(value["selected"].toBool())route(value["selectedPath"].toString());QSqlQuery profiles(db_);profiles.prepare("SELECT p.path FROM txt_profiles p JOIN txt_profile_capcodes a ON a.profile_id=p.id WHERE p.enabled=1 AND a.ric=?");profiles.addBindValue(m.ric);check(profiles);while(profiles.next())route(profiles.value(0).toString());profiles.finish();}QString text=QString::fromStdString(m.text);text.replace('\r',"\\r").replace('\n',"\\n");auto line=(QString("%1").arg(m.ric,7,10,QChar('0'))+" "+local.date().toString("dd/MM/yyyy")+" "+local.time().toString("HH:mm:ss")+" "+text+"\r\n").toUtf8();
- for(auto path:paths){QSqlQuery out(db_);out.prepare("INSERT INTO journal_outbox(message_id,path,line) VALUES(?,?,?)");out.addBindValue(messageId);out.addBindValue(path);out.addBindValue(line);check(out);out.finish();}if(pager&&(m.type=="ALPHA"||m.type=="NUMERIC")){auto pagerAlias=alias.isEmpty()?QString("Capcode %1").arg(m.ric,7,10,QChar('0')):alias;auto envelope=pagerEnvelope(value["id"].toString(),m.ric,pagerAlias,local.toUTC(),quint32(value["frequency"].toDouble()),value["source"].toString(),QString::fromStdString(m.text));envelope["utterance"]=SpeechService::utterance({value["id"].toString(),pagerAlias,spokenText(m)});envelope["schema"]=2;envelope["generation_state"]="pending";envelope["transfer_state"]="disabled";auto expirySeconds=value["pagerExpirySeconds"].toInt(3600);auto expires=expirySeconds>0?local.toMSecsSinceEpoch()+qint64(expirySeconds)*1000:0;envelope["expires_utc"]=expires?QDateTime::fromMSecsSinceEpoch(expires,QTimeZone::UTC).toString(Qt::ISODateWithMs):QString{};auto root=value["pagerRoot"].toString();QString path;if(!root.isEmpty())path=QDir(root).filePath("pager_"+local.toUTC().toString("yyyyMMdd_HHmmss")+"_"+value["id"].toString()+".wav");QSqlQuery job(db_);job.prepare("INSERT OR IGNORE INTO pager_jobs(event_uid,envelope,audio_path,expires_ms) VALUES(?,?,?,?)");job.addBindValue(value["id"].toString());job.addBindValue(QString::fromUtf8(QJsonDocument(envelope).toJson(QJsonDocument::Compact)));job.addBindValue(path);job.addBindValue(expires);check(job);job.finish();}if(!db_.commit())throw std::runtime_error(db_.lastError().text().toStdString());++persistedFrames_;if(!lastStorageError_.isEmpty()){technical("Stockage SQLite repris ; file conservée et retransmise");lastStorageError_.clear();}journalWorker_->request(disabledTypes());if(pager&&pagerWorker_)pagerWorker_->request();technical(QString("Éligibilité voix : événement=%1 ; capcode=%2 ; enregistré=%3 ; individuel=%4 ; général=%5 ; type=%6").arg(value["id"].toString()).arg(m.ric,7,10,QChar('0')).arg(registered).arg(voice).arg(speechSettings_.enabled).arg(QString::fromStdString(m.type)));if(voice&&(m.type=="ALPHA"||m.type=="NUMERIC")){if(alias.isEmpty())alias=QString("Capcode %1").arg(m.ric,7,10,QChar('0'));speech_.enqueue({value["id"].toString(),alias,spokenText(m)});}scheduleRefresh();return true;
- }catch(const std::exception& error){db_.rollback();++sqliteRetries_;storageProblem(QString::fromUtf8(error.what()));return false;}}
+ for(auto path:paths){QSqlQuery out(db_);out.prepare("INSERT INTO journal_outbox(message_id,path,line) VALUES(?,?,?)");out.addBindValue(messageId);out.addBindValue(path);out.addBindValue(line);check(out);out.finish();}if(pager&&(m.type=="ALPHA"||m.type=="NUMERIC")){auto pagerAlias=alias.isEmpty()?QString("Capcode %1").arg(m.ric,7,10,QChar('0')):alias;auto envelope=pagerEnvelope(value["id"].toString(),m.ric,pagerAlias,local.toUTC(),quint32(value["frequency"].toDouble()),value["source"].toString(),QString::fromStdString(m.text));envelope["utterance"]=SpeechService::utterance({value["id"].toString(),pagerAlias,spokenText(m)});envelope["schema"]=2;envelope["generation_state"]="pending";envelope["transfer_state"]="disabled";auto expirySeconds=value["pagerExpirySeconds"].toInt(3600);auto expires=expirySeconds>0?local.toMSecsSinceEpoch()+qint64(expirySeconds)*1000:0;envelope["expires_utc"]=expires?QDateTime::fromMSecsSinceEpoch(expires,QTimeZone::UTC).toString(Qt::ISODateWithMs):QString{};auto root=value["pagerRoot"].toString();QString path;if(!root.isEmpty())path=QDir(root).filePath("pager_"+local.toUTC().toString("yyyyMMdd_HHmmss")+"_"+value["id"].toString()+".wav");QSqlQuery job(db_);job.prepare("INSERT OR IGNORE INTO pager_jobs(event_uid,envelope,audio_path,expires_ms) VALUES(?,?,?,?)");job.addBindValue(value["id"].toString());job.addBindValue(QString::fromUtf8(QJsonDocument(envelope).toJson(QJsonDocument::Compact)));job.addBindValue(path);job.addBindValue(expires);check(job);job.finish();}if(!db_.commit())throw std::runtime_error(db_.lastError().text().toStdString()); return {{},true,pager,voice,registered,m.ric,QString::fromStdString(m.type),alias,spokenText(m)};
+ }catch(const std::exception& error){db_.rollback();return {QString::fromUtf8(error.what())};}
+}
+static QString spoolMessage(const QString& dir,const QJsonObject& value){
+ QSaveFile file(QDir(dir).filePath(value["id"].toString()+".json"));
+ auto bytes=QJsonDocument(value).toJson(QJsonDocument::Compact);
+ if(!file.open(QIODevice::WriteOnly)||file.write(bytes)!=bytes.size()||!file.commit())return file.errorString();
+ return {};
+}
+class IngestionWriter:public QObject{
+public:
+ QString database,dir;
+ QSqlDatabase db;
+ std::deque<QJsonObject> queue;
+ std::function<void(QJsonObject,StoreOutcome)> result;
+ std::function<void(QString)> warning;
+ QString connection=QUuid::createUuid().toString();
+ void initialize(){
+  db=QSqlDatabase::addDatabase("QSQLITE",connection);
+  db.setDatabaseName(database);
+  db.setConnectOptions("QSQLITE_BUSY_TIMEOUT=50");
+  auto retry=new QTimer(this);
+  connect(retry,&QTimer::timeout,this,[this]{pump();});
+  retry->start(200);pump();
+ }
+ void append(QJsonObject value){
+  auto error=spoolMessage(dir,value);
+  if(!error.isEmpty())warning("Spool de réception indisponible : "+error);
+  queue.push_back(std::move(value));pump();
+ }
+ bool pump(){
+  if(queue.empty())return true;
+  if(!db.isOpen()&&!db.open()){result({},StoreOutcome{db.lastError().text()});return false;}
+  for(int batch=0;batch<32&&!queue.empty();++batch){
+   auto value=queue.front();
+   auto outcome=persistMessage(db,value);
+   result(value,outcome);
+   if(!outcome.error.isEmpty())return false;
+   QFile::remove(QDir(dir).filePath(value["id"].toString()+".json"));
+   queue.pop_front();
+  }
+  return true;
+ }
+ void close(){
+  while(!queue.empty()&&pump()){}
+  for(const auto& value:queue){
+   if(!QFileInfo::exists(QDir(dir).filePath(value["id"].toString()+".json"))){
+    auto error=spoolMessage(dir,value);
+    if(!error.isEmpty())warning("Spool de fermeture indisponible : "+error);
+   }
+  }
+  db.close();db=QSqlDatabase();QSqlDatabase::removeDatabase(connection);
+ }
+};
+void Window::storageProblem(QString text){if(text!=lastStorageError_){technical("Stockage différé : "+text+" — message conservé dans la file locale");lastStorageError_=text;}}
+void Window::initIngestion(){pendingDirectory_=QFileInfo(db_.databaseName()).absolutePath()+"/incoming-pending";QDir().mkpath(pendingDirectory_);for(auto name:QDir(pendingDirectory_).entryList({"*.json"},QDir::Files,QDir::Name)){QFile f(QDir(pendingDirectory_).filePath(name));if(f.open(QIODevice::ReadOnly)){QJsonParseError error;auto doc=QJsonDocument::fromJson(f.readAll(),&error);if(error.error==QJsonParseError::NoError&&doc.isObject()&&name==doc.object()["id"].toString()+".json")pendingMessages_.push_back(doc.object());else technical("File de réception illisible conservée : "+name);}}
+ std::stable_sort(pendingMessages_.begin(),pendingMessages_.end(),[](const auto& a,const auto& b){if(a["timestamp"]==b["timestamp"])return a["sequence"].toDouble()<b["sequence"].toDouble();return a["timestamp"].toString()<b["timestamp"].toString();});
+ startIngestionWriter();ingestionTimer_=new QTimer(this);connect(ingestionTimer_,&QTimer::timeout,this,&Window::pumpMessages);ingestionTimer_->start(200);auto health=new QTimer(this);connect(health,&QTimer::timeout,this,[this]{auto r=selectedRadio_?selectedRadio_:&radio_;technical(QString("Chaîne réception : IQ=%1 octets ; décodeur=%2 trames ; SQLite=%3 insertions ; réception en attente=%4 ; tableaux=%5/%6 lignes").arg(r->iqBytes()).arg(r->decodedFrames()).arg(persistedFrames_).arg(pendingMessages_.size()+pendingWrites_).arg(all_->rowCount()).arg(saved_->rowCount()));});health->start(60000);}
+void Window::received(pocsag::Message m,quint32 frequency,QString receiver,QDateTime timestamp){if(!timestamp.isValid())timestamp=QDateTime::currentDateTimeUtc();if(!frequency)frequency=radio_.config.frequency;if(receiver.isEmpty())receiver=radio_.config.file.isEmpty()?devices_->currentText():radio_.config.file;
+ auto id=QUuid::createUuid().toString(QUuid::WithoutBraces);QStringList disabled=disabledTypes();if(m.rawBits.empty()&&disabled.contains(QString::fromStdString(m.type)))return;QJsonObject value{{"id",id},{"sequence",double(acceptedFrames_)},{"message",encode(m)},{"frequency",double(frequency)},{"source",receiver},{"timestamp",timestamp.toUTC().toString(Qt::ISODateWithMs)},{"interpretation",format_->currentText()},{"disabled",QJsonArray::fromStringList(disabled)},{"general",generalCopy_->isChecked()},{"selected",selectedLogging_->isChecked()},{"generalPath",generalJournalPath(timestamp)},{"selectedPath",selectedLogPath_->text()},{"pagerRoot",pagerSettings_.audioRoot},{"pagerExpirySeconds",pagerSettings_.expirySeconds}};
+ // Atomic spool precedes SQLite. A temporary database lock cannot discard an accepted frame.
+ ++acceptedFrames_;
+ if(writer_){
+  ++pendingWrites_;
+  QMetaObject::invokeMethod(writer_,[worker=writer_,value]{worker->append(value);},Qt::QueuedConnection);
+  return;
+ }
+ auto error=spoolMessage(pendingDirectory_,value);
+ if(!error.isEmpty())technical("Spool de réception indisponible : "+error);
+ pendingMessages_.push_back(value);pumpMessages();
+}
+void Window::pumpMessages(){if(writer_||draining_)return;draining_=true;QElapsedTimer slice;slice.start();int batch=0;while(!pendingMessages_.empty()&&batch++<32&&(batch==1||slice.elapsed()<12)){auto value=pendingMessages_.front();if(!storePending(value))break;QFile::remove(QDir(pendingDirectory_).filePath(value["id"].toString()+".json"));pendingMessages_.pop_front();}draining_=false;}
+void Window::startIngestionWriter(){
+ if(!asyncHistory_||writer_)return;
+ writer_=new IngestionWriter;
+ writer_->database=db_.databaseName();writer_->dir=pendingDirectory_;
+ writer_->queue=std::move(pendingMessages_);pendingMessages_.clear();
+ pendingWrites_=writer_->queue.size();
+ writer_->result=[this](QJsonObject value,StoreOutcome result){
+  QMetaObject::invokeMethod(this,[this,value,result]{
+   if(result.error.isEmpty()&&pendingWrites_)--pendingWrites_;
+   handleStoreResult(value,result);
+  },Qt::QueuedConnection);
+ };
+ writer_->warning=[this](QString text){QMetaObject::invokeMethod(this,[this,text]{technical(text);},Qt::QueuedConnection);};
+ writer_->moveToThread(&writerThread_);
+ connect(&writerThread_,&QThread::finished,writer_,&QObject::deleteLater);
+ writerThread_.start();
+ QMetaObject::invokeMethod(writer_,[w=writer_]{w->initialize();},Qt::QueuedConnection);
+}
+void Window::stopIngestionWriter(){
+ if(!writer_)return;
+ QMetaObject::invokeMethod(writer_,[this]{writer_->close();pendingMessages_=std::move(writer_->queue);},Qt::BlockingQueuedConnection);
+ writerThread_.quit();writerThread_.wait();writer_=nullptr;
+ QCoreApplication::sendPostedEvents(this,QEvent::MetaCall);
+ pendingWrites_=0;
+}
+bool Window::storePending(const QJsonObject& value){
+ auto result=persistMessage(db_,value);handleStoreResult(value,result);
+ return result.error.isEmpty();
+}
+void Window::handleStoreResult(const QJsonObject& value,const StoreOutcome& result){
+ if(!result.error.isEmpty()){++sqliteRetries_;storageProblem(result.error);return;}
+ if(!result.inserted)return;
+ ++persistedFrames_;
+ if(!lastStorageError_.isEmpty()){technical("Stockage SQLite repris ; file conservée et retransmise");lastStorageError_.clear();}
+ journalWorker_->request(disabledTypes());
+ if(result.pager&&pagerWorker_)pagerWorker_->request();
+ technical(QString("Éligibilité voix : événement=%1 ; capcode=%2 ; enregistré=%3 ; individuel=%4 ; général=%5 ; type=%6")
+   .arg(value["id"].toString()).arg(result.ric,7,10,QChar('0')).arg(result.registered).arg(result.voice).arg(speechSettings_.enabled).arg(result.type));
+ if(result.voice&&(result.type=="ALPHA"||result.type=="NUMERIC")){
+  auto alias=result.alias.isEmpty()?QString("Capcode %1").arg(result.ric,7,10,QChar('0')):result.alias;
+  speech_.enqueue({value["id"].toString(),alias,result.speech});
+ }
+ scheduleRefresh();
+}
