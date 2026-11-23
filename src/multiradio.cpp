@@ -10,6 +10,8 @@
 void Window::connectReceiver(Receiver* r){
  connect(r,&Receiver::samples,this,[this,r](QByteArray bytes){if(selectedRadio_==r||(!selectedRadio_&&r==&radio_))spectrum_->updateIq(bytes);});
  connect(r,&Receiver::frame,this,[this](pocsag::Message m,quint32 f,QString identity,QDateTime timestamp){received(std::move(m),f,identity,timestamp);});
+ connect(r,&Receiver::flexFrame,this,[this](quint64 address,int baud,int levels,QString type,QString text,quint32 f,QString identity,QDateTime timestamp){receivedFlex(address,baud,levels,type,text,f,identity,timestamp);});
+ connect(r,&Receiver::protocolDetected,this,[this,r](QString protocol){if(selectedRadio_==r&&protocolStatus_)protocolStatus_->setText((r->config.protocol==paging::SelectionMode::Auto?QString("AUTO : "):QString("Mode : "))+protocol);});
  connect(r,&Receiver::problem,this,[this,r](QString text){technical(r->config.deviceKey+" : "+text);});
  connect(r,&Receiver::state,this,[this,r](QString text){if(selectedRadio_==r)status_->setText(text);});
  connect(r,&Receiver::tuned,this,[this,r](quint32 f,quint32 rate,quint32 bandwidth,QString identity){if(selectedRadio_==r){frequencyDisplay_->setText(QString::number(f/1e6,'f',6)+" MHz");frequencyDisplay_->setToolTip(identity);spectrum_->tuneFrequency(f);spectrum_->sampleRate=rate;spectrum_->bandwidth=bandwidth;}updatePresentationState();refreshSources();});

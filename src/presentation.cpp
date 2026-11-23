@@ -29,7 +29,7 @@ void Window::setupPresentation(){
  QPixmap appIcon(32,32);appIcon.fill(Qt::transparent);{QPainter p(&appIcon);p.setRenderHint(QPainter::Antialiasing);p.setBrush(QColor("#1769AA"));p.setPen(Qt::NoPen);p.drawRoundedRect(QRect(0,0,32,32),5,5);p.setPen(QPen(Qt::white,2));p.drawEllipse(QPoint(16,13),2,2);p.drawLine(16,16,11,27);p.drawLine(16,16,21,27);p.drawArc(QRect(4,3,24,24),25*16,130*16);p.drawArc(QRect(8,7,16,16),25*16,130*16);}setWindowIcon(QIcon(appIcon));
  qualityBar_->setFixedSize(180,17);presentationState_=new QLabel;presentationState_->setObjectName("serviceStates");statusBar()->addPermanentWidget(presentationState_);status_->setMaximumWidth(400);status_->setMinimumWidth(100);
  if(auto old=findChild<QLabel*>("legacyTxtState"))old->hide();auto dataLocation=new ElidedLabel;dataLocation->setObjectName("storageLocation");dataLocation->setMaximumWidth(230);dataLocation->setText(QDir::toNativeSeparators(QFileInfo(db_.databaseName()).absolutePath()));dataLocation->setToolTip("Emplacement des données : "+QDir::toNativeSeparators(QFileInfo(db_.databaseName()).absolutePath()));statusBar()->insertPermanentWidget(0,dataLocation);
- auto timer=new QTimer(this);connect(timer,&QTimer::timeout,this,&Window::updatePresentationState);timer->start(2000);applyPresentation();adaptPresentation();
+ auto timer=new QTimer(this);timer->setObjectName("presentationStatus");connect(timer,&QTimer::timeout,this,&Window::updatePresentationState);timer->start(2000);applyPresentation();adaptPresentation();
 }
 void Window::applyPresentation(){
  const QString bg=glacier_?"#F0F4F8":"#071425",top=glacier_?"#F8FBFF":"#061629",ink=glacier_?"#172C3E":"#e6eefb",field=glacier_?"#FFFFFF":"#0b1e33",border=glacier_?"#C4D7E8":"#385775",alternate=glacier_?"#E8F2FC":"#050d18",header=glacier_?"#DCEAF7":"#11365e",selected=glacier_?"#B7DCFA":"#005dc8";
@@ -41,12 +41,34 @@ void Window::applyPresentation(){
  setStyleSheet(css);for(auto action:findChild<QToolBar*>()->actions()){if(qobject_cast<QWidgetAction*>(action))continue;QPixmap icon(26,26);icon.fill(Qt::transparent);QPainter paint(&icon);paint.setRenderHint(QPainter::Antialiasing);QColor color(glacier_?"#075B91":"#a7d7ff");paint.setPen(QPen(color,2));auto name=action->text();if(name.contains("Démarrer")){paint.setPen(Qt::NoPen);paint.setBrush(glacier_?Qt::white:QColor("#39d9ff"));paint.drawPolygon(QPolygon{{7,3},{7,23},{23,13}});}else if(name.contains("Arrêter tous")){paint.fillRect(5,5,16,16,QColor("#DC2626"));}else if(action==voiceAction_){paint.drawLine(3,10,7,10);paint.drawLine(3,16,7,16);paint.drawLine(3,10,3,16);paint.drawPolygon(QPolygon{{7,10},{13,5},{13,21},{7,16}});paint.drawArc(QRect(11,4,12,18),-70*16,140*16);}else if(name=="Capcodes"){for(int x:{5,13,21})paint.drawEllipse(QPoint(x,7),3,3);paint.drawArc(QRect(1,12,24,18),0,180*16);}else if(name.contains("Derniers")){paint.drawLine(13,3,13,20);paint.drawLine(6,13,13,20);paint.drawLine(13,20,20,13);paint.drawLine(5,24,21,24);}else if(name.contains("Paramètres")){paint.drawEllipse(QPoint(13,13),7,7);paint.drawEllipse(QPoint(13,13),2,2);for(int angle=0;angle<8;++angle){paint.save();paint.translate(13,13);paint.rotate(angle*45);paint.drawLine(0,8,0,12);paint.restore();}}else{paint.drawRoundedRect(QRect(5,2,16,22),2,2);for(int y:{8,13,18})paint.drawLine(9,y,17,y);}paint.end();action->setIcon(QIcon(icon));}int px=textSize_==0?13:textSize_==1?15:18;for(auto table:{allView_,savedView_}){auto m=static_cast<MessageModel*>(table->model());m->glacier=glacier_;m->pixelSize=px;table->setStyleSheet(QString("QTableView{font-family:'%1';font-size:%2px}").arg(glacier_?"Segoe UI":"Consolas").arg(px));QFont f(glacier_?"Segoe UI":"Consolas");f.setPixelSize(px);table->setFont(f);table->verticalHeader()->setMinimumSectionSize(20);table->verticalHeader()->setDefaultSectionSize(textSize_==0?24:textSize_==1?29:34);table->viewport()->update();}updateSdrIndicator();updatePresentationState();
 }
 void Window::updatePresentationState(){
- if(frequencyMeta_){auto r=selectedRadio_?selectedRadio_:&radio_;QString baud=r->isRunning()?(r->config.baud?QString::number(r->config.baud):QString("AUTO")):baud_->currentText();frequencyMeta_->setText("Mode : POCSAG  |  Vitesse : "+baud+(baud=="AUTO"?QString{}:QString(" bauds")));}
- if(!presentationState_)return;QSqlQuery q(db_);bool available=q.exec("SELECT EXISTS(SELECT 1 FROM capcodes WHERE active=1 AND pager_enabled=1)")&&q.next();QStorageInfo storage(pagerSettings_.audioRoot);bool wav=QFileInfo(pagerSettings_.audioRoot).isWritable()&&storage.isValid()&&storage.isReady()&&storage.bytesAvailable()>16LL*1024*1024&&available&&q.value(0).toBool()&&pagerWorker_&&pagerWorker_->isRunning()&&!pagerSettings_.audioRoot.isEmpty();q.finish();QString path=QFileInfo(db_.databaseName()).absolutePath();presentationState_->setToolTip("Emplacement SQLite : "+path+"\nWAV/JSON : génération locale pour les capcodes actifs configurés ; aucun transport distant actif.");presentationState_->setText(QString("SQLite : %1   |   TXT : %2 / %3   |   WAV : %4   |   JSON : %4   |   Voix : %5").arg(available?"OK":"ERREUR",generalCopy_->isChecked()?"ON":"OFF",selectedLogging_->isChecked()?"ON":"OFF",wav?"ON":"OFF",speechSettings_.enabled?"ON":"OFF"));
+ if(frequencyMeta_){auto r=selectedRadio_?selectedRadio_:&radio_;QString baud=r->isRunning()?(r->config.baud?QString::number(r->config.baud):QString("AUTO")):baud_->currentText();const QString mode=r->isRunning()?(r->config.protocol==paging::SelectionMode::Auto?QString("AUTO"):r->config.protocol==paging::SelectionMode::Flex?QString("FLEX"):QString("POCSAG")):(protocol_?protocol_->currentText():QString("POCSAG"));frequencyMeta_->setText(mode=="FLEX"?"Mode : FLEX":"Mode : "+mode.section(" —",0,0)+"  |  POCSAG : "+baud+(baud=="AUTO"?QString{}:QString(" bauds")));}
+ if(!presentationState_||presentationReading_)return;
+ struct Status{bool eligible=false;QString error;};
+ const auto audio=pagerSettings_.audioRoot;
+ auto read=[audio](const QSqlDatabase& db){
+  Status result;QSqlQuery q(db);
+  if(!q.exec("SELECT EXISTS(SELECT 1 FROM capcodes WHERE active=1 AND pager_enabled=1)")||!q.next()){result.error=q.lastError().text();return result;}
+  if(!q.value(0).toBool()||audio.isEmpty())return result;
+  QStorageInfo storage(audio);
+  result.eligible=storage.isValid()&&storage.isReady()&&storage.bytesAvailable()>16LL*1024*1024&&QFileInfo(audio).isWritable();
+  return result;
+ };
+ auto display=[this](const Status& result){
+  bool wav=result.eligible&&pagerWorker_&&pagerWorker_->isRunning();
+  presentationState_->setToolTip("Emplacement SQLite : "+QFileInfo(db_.databaseName()).absolutePath()+"\nWAV/JSON : génération locale pour les capcodes actifs configurés ; aucun transport distant actif.");
+  presentationState_->setText(QString("SQLite : %1   |   TXT : %2 / %3   |   WAV : %4   |   JSON : %4   |   Voix : %5").arg(result.error.isEmpty()?"OK":"ERREUR",generalCopy_->isChecked()?"ON":"OFF",selectedLogging_->isChecked()?"ON":"OFF",wav?"ON":"OFF",speechSettings_.enabled?"ON":"OFF"));
+ };
+ if(testStorage_&&!asyncHistory_){display(read(db_));return;}
+ presentationReading_=true;
+ auto watcher=new QFutureWatcher<Status>(this);
+ connect(watcher,&QFutureWatcher<Status>::finished,this,[this,watcher,display]{presentationReading_=false;display(watcher->result());watcher->deleteLater();});
+ watcher->setFuture(QtConcurrent::run([file=db_.databaseName(),read]{return readHistoryDatabase<Status>(file,read);}));
 }
 
 void Window::resizeEvent(QResizeEvent* event){QMainWindow::resizeEvent(event);if(presentationState_)adaptPresentation();}
 void Window::adaptPresentation(){
- bool compact=width()<1150;auto toolbar=findChild<QToolBar*>();if(!toolbar)return;toolbar->setStyleSheet(compact?"QToolBar{spacing:2px}":"");qualityBar_->setFixedWidth(compact?80:180);for(auto action:toolbar->actions()){if(auto button=qobject_cast<QToolButton*>(toolbar->widgetForAction(action))){button->setMinimumSize(compact?30:38,34);if(action==voiceAction_)button->setToolButtonStyle(compact?Qt::ToolButtonIconOnly:Qt::ToolButtonTextBesideIcon);}}
+ bool compact=width()<1150;auto toolbar=findChild<QToolBar*>();if(!toolbar)return;
+ frequencyDisplay_->setMinimumWidth(205);
+ toolbar->setStyleSheet(compact?"QToolBar{spacing:2px}":"");qualityBar_->setFixedWidth(compact?80:180);for(auto action:toolbar->actions()){if(auto button=qobject_cast<QToolButton*>(toolbar->widgetForAction(action))){button->setMinimumSize(compact?30:38,34);if(action==voiceAction_)button->setToolButtonStyle(compact?Qt::ToolButtonIconOnly:Qt::ToolButtonTextBesideIcon);}}
  frequencyDisplay_->setStyleSheet(QString("font-size:%1px;font-weight:600;background:transparent").arg(compact?22:24));status_->setMaximumWidth(compact?160:400);if(auto location=findChild<QLabel*>("storageLocation")){location->setMaximumWidth(compact?110:230);location->setVisible(width()>=900);}presentationState_->setStyleSheet(compact?"font-size:11px;padding:2px":"font-size:12px;padding:5px");
 }

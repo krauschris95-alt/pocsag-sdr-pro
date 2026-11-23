@@ -27,6 +27,25 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build --config Release --parallel 2
+      - name: Build FLEX_NEXT decoder from pinned multimon-ng
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $PSNativeCommandUseErrorActionPreference=$true
+          git clone --depth 1 https://github.com/EliasOenal/multimon-ng.git flex-upstream
+          git -C flex-upstream fetch --depth 1 origin 10c0aeb68bc78a58b7019a45ab4e1bfee4fc9592
+          git -C flex-upstream checkout --detach 10c0aeb68bc78a58b7019a45ab4e1bfee4fc9592
+          $cmakeFile = 'flex-upstream/CMakeLists.txt'
+          $cmakeContent = Get-Content $cmakeFile -Raw
+          $windowsProject = 'project( multimon-ng CXX )'
+          if (($cmakeContent.Split(@($windowsProject), [StringSplitOptions]::None).Count -ne 2)) { throw 'Unexpected multimon-ng Windows project declaration' }
+          $cmakeContent.Replace($windowsProject, 'project( multimon-ng C CXX )') | Set-Content $cmakeFile
+          cmake -S flex-upstream -B flex-build -G Ninja -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DBUILD_GEN_NG=OFF -DBUILD_TESTING=OFF
+          cmake --build flex-build --parallel 2
+          if (!(Test-Path flex-build/multimon-ng.exe)) { throw 'FLEX_NEXT executable was not produced' }
+          Copy-Item flex-build/multimon-ng.exe build/multimon-ng.exe
+          [System.IO.File]::WriteAllBytes('flex-build/silence.raw', [byte[]]::new(4096))
+          & ./flex-build/multimon-ng.exe -c -a FLEX_NEXT --json -q -v 0 -t raw flex-build/silence.raw
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Deploy
@@ -35,6 +54,11 @@ jobs:
           $PSNativeCommandUseErrorActionPreference=$true
           cmake --install build --config Release --prefix dist/POCSAG-SDR-Pro
           windeployqt --release --no-translations dist/POCSAG-SDR-Pro/POCSAG-SDR-Pro.exe
+          Copy-Item flex-build/multimon-ng.exe dist/POCSAG-SDR-Pro/multimon-ng.exe
+          New-Item -ItemType Directory -Force dist/POCSAG-SDR-Pro/licenses | Out-Null
+          Copy-Item flex-upstream/COPYING dist/POCSAG-SDR-Pro/licenses/multimon-ng-COPYING
+          New-Item -ItemType Directory -Force dist/POCSAG-SDR-Pro/docs | Out-Null
+          Copy-Item docs/FLEX-THIRD-PARTY.md dist/POCSAG-SDR-Pro/docs/FLEX-THIRD-PARTY.md
           $packagePython='${{ steps.packaging_python.outputs.python-path }}'
           & $packagePython --version
           & $packagePython -c "from compression import zstd; print('Standard-library Zstandard available')"

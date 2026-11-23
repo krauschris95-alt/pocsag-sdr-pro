@@ -8,12 +8,24 @@
 #include "soapyradio.h"
 #include "cpucaps.h"
 #include <QJsonDocument>
-void Window::scheduleRefresh(){if(testStorage_)refresh();else if(!refreshTimer_->isActive())refreshTimer_->start(150);}
-void Window::storePreferences(){
- if(!tabs_)return;QSettings s(settingsFile_,QSettings::IniFormat);s.setValue("ui/splitter",messageSplit_->saveState());s.setValue("ui/layoutVersion",2);s.setValue("ui/geometry",saveGeometry());s.setValue("ui/allColumns",allView_->horizontalHeader()->saveState());s.setValue("ui/selectedColumns",savedView_->horizontalHeader()->saveState());s.setValue("ui/tab",tabs_->currentIndex());s.setValue("rx/frequency",frequency_->value());s.setValue("rx/gain",gain_->value());s.setValue("rx/ppm",ppm_->value());s.setValue("rx/baud",baud_->currentText());s.setValue("rx/device",devices_->currentData());s.setValue("ui/scroll",autoscroll_);s.setValue("voice/enabled",speechSettings_.enabled);s.setValue("voice/muted",!speechSettings_.enabled);s.setValue("voice/id",speechSettings_.voice);s.setValue("voice/output",speechSettings_.output);s.setValue("voice/volume",speechSettings_.volume);s.setValue("voice/rate",speechSettings_.rate);s.setValue("voice/limit",speechSettings_.limit);s.setValue("voice/dropOldest",speechSettings_.dropOldest);s.sync();
+#include <QFutureWatcher>
+#include <QtConcurrent/QtConcurrentRun>
+void Window::scheduleRefresh(){if(testStorage_&&!asyncHistory_)refreshHistory(true);else if(!refreshTimer_->isActive())refreshTimer_->start(150);}
+void Window::storePreferences(){savePreferenceSnapshot(false);}
+void Window::savePreferenceSnapshot(bool background){
+ if(!tabs_)return;QVariantMap snapshot;snapshot.insert("ui/splitter",messageSplit_->saveState());snapshot.insert("ui/layoutVersion",2);snapshot.insert("ui/geometry",saveGeometry());snapshot.insert("ui/allColumns",allView_->horizontalHeader()->saveState());snapshot.insert("ui/selectedColumns",savedView_->horizontalHeader()->saveState());snapshot.insert("ui/tab",tabs_->currentIndex());snapshot.insert("rx/frequency",frequency_->value());snapshot.insert("rx/gain",gain_->value());snapshot.insert("rx/ppm",ppm_->value());snapshot.insert("rx/baud",baud_->currentText());snapshot.insert("rx/device",devices_->currentData());snapshot.insert("ui/scroll",autoscroll_);snapshot.insert("voice/enabled",speechSettings_.enabled);snapshot.insert("voice/muted",!speechSettings_.enabled);snapshot.insert("voice/id",speechSettings_.voice);snapshot.insert("voice/output",speechSettings_.output);snapshot.insert("voice/volume",speechSettings_.volume);snapshot.insert("voice/rate",speechSettings_.rate);snapshot.insert("voice/limit",speechSettings_.limit);snapshot.insert("voice/dropOldest",speechSettings_.dropOldest);
+ auto write=[file=settingsFile_,snapshot]{
+  QSettings settings(file,QSettings::IniFormat);
+  for(auto i=snapshot.cbegin();i!=snapshot.cend();++i)
+   if(settings.value(i.key())!=i.value())settings.setValue(i.key(),i.value());
+  settings.sync();
+ };
+ if(background&&asyncHistory_){preferencePool_.start(std::move(write));return;}
+ preferencePool_.waitForDone();
+ write();
 }
 void Window::finishLayout(){
- refreshTimer_=new QTimer(this);refreshTimer_->setSingleShot(true);connect(refreshTimer_,&QTimer::timeout,this,&Window::refresh);
+ refreshTimer_=new QTimer(this);refreshTimer_->setObjectName("historyRefresh");refreshTimer_->setSingleShot(true);connect(refreshTimer_,&QTimer::timeout,this,[this]{refreshHistory(true);});
  QSettings s(settingsFile_,QSettings::IniFormat);if(s.value("ui/layoutVersion",0).toInt()==2)messageSplit_->restoreState(s.value("ui/splitter").toByteArray());else QTimer::singleShot(0,this,[this]{int h=messageSplit_->height();messageSplit_->setSizes({h*3/5,h*2/5});});restoreGeometry(s.value("ui/geometry").toByteArray());allView_->horizontalHeader()->restoreState(s.value("ui/allColumns").toByteArray());savedView_->horizontalHeader()->restoreState(s.value("ui/selectedColumns").toByteArray());tabs_->setCurrentIndex(s.value("ui/tab",0).toInt());autoscroll_=s.value("ui/scroll",true).toBool();if(auto action=findChild<QAction*>("autoScrollMessages"))action->setChecked(autoscroll_);
  for(auto spin:{frequency_,gain_,ppm_})spin->blockSignals(true);frequency_->setValue(s.value("rx/frequency",frequency_->value()).toDouble());gain_->setValue(s.value("rx/gain",gain_->value()).toDouble());ppm_->setValue(s.value("rx/ppm",ppm_->value()).toDouble());for(auto spin:{frequency_,gain_,ppm_})spin->blockSignals(false);baud_->setCurrentText(s.value("rx/baud",baud_->currentText()).toString());reloadDevices();
  speechSettings_={!s.value("voice/muted",false).toBool(),s.value("voice/id").toString(),s.value("voice/output").toString(),s.value("voice/volume",80).toInt(),s.value("voice/rate",0).toInt(),s.value("voice/limit",50).toInt(),s.value("voice/dropOldest",false).toBool()};if(speechSettings_.voice.isEmpty())for(auto& voice:SpeechService::voices())if(voice.french){speechSettings_.voice=voice.id;break;}
@@ -42,7 +54,24 @@ void Window::finishLayout(){
  QSettings prefs(settingsFile_,QSettings::IniFormat);prefs.setValue("windows/startup",value);});
  auto filters=new QDialog(this);filters->setWindowTitle("Filtres d'affichage — historique et journaux inchangés");auto form=new QFormLayout(filters);filterRic_=new QLineEdit;filterAlias_=new QLineEdit;filterKeyword_=new QLineEdit;filterFrequency_=new QDoubleSpinBox;filterFrequency_->setRange(0,6000);filterFrequency_->setDecimals(6);filterFrequency_->setSpecialValueText("Toutes");filterFrequency_->setSuffix(" MHz");filterBaud_=new QComboBox;filterBaud_->addItems({"Tous","512","1200","2400"});filterType_=new QComboBox;filterType_->addItems({"Tous","ALPHA","NUMERIC","TONE","DIAGNOSTIC","AMBIGUOUS","INCOMPLETE"});filterFrom_=new QDateTimeEdit(QDateTime(QDate(1970,1,1),QTime(0,0)));filterTo_=new QDateTimeEdit(QDateTime(QDate(2100,1,1),QTime(0,0)));for(auto edit:{filterFrom_,filterTo_}){edit->setCalendarPopup(true);edit->setDisplayFormat("dd/MM/yyyy HH:mm:ss");}form->addRow("Capcode exact",filterRic_);form->addRow("Nom personnalisé",filterAlias_);form->addRow("Mot-clé",filterKeyword_);form->addRow("Fréquence",filterFrequency_);form->addRow("Vitesse",filterBaud_);form->addRow("Type",filterType_);form->addRow("Depuis (Bruxelles)",filterFrom_);form->addRow("Jusqu'à (Bruxelles)",filterTo_);auto buttons=new QDialogButtonBox(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Close);form->addRow(buttons);connect(buttons->button(QDialogButtonBox::Apply),&QPushButton::clicked,this,&Window::refresh);connect(buttons->button(QDialogButtonBox::Reset),&QPushButton::clicked,this,[this]{filterRic_->clear();filterAlias_->clear();filterKeyword_->clear();filterFrequency_->setValue(0);filterBaud_->setCurrentIndex(0);filterType_->setCurrentIndex(0);filterFrom_->setDateTime(QDateTime(QDate(1970,1,1),QTime(0,0)));filterTo_->setDateTime(QDateTime(QDate(2100,1,1),QTime(0,0)));refresh();});connect(buttons,&QDialogButtonBox::rejected,filters,&QDialog::hide);tools->addAction("Rechercher / filtrer l'historique…",filters,&QDialog::show);
  logs->addAction("Ouvrir le fichier TXT actif",this,[this]{QDesktopServices::openUrl(QUrl::fromLocalFile(generalJournalPath(QDateTime::currentDateTimeUtc())));});
- connect(messageSplit_,&QSplitter::splitterMoved,this,[this]{storePreferences();});auto prefsTimer=new QTimer(this);connect(prefsTimer,&QTimer::timeout,this,&Window::storePreferences);prefsTimer->start(30000);auto spaceTimer=new QTimer(this);connect(spaceTimer,&QTimer::timeout,this,[this]{QStringList paths{QFileInfo(db_.databaseName()).absolutePath()};if(generalCopy_->isChecked())paths<<root_->text();if(selectedLogging_->isChecked())paths<<QFileInfo(selectedLogPath_->text()).absolutePath();for(auto path:paths){QStorageInfo storage(path);if(storage.isValid()&&storage.isReady()&&storage.bytesAvailable()<256LL*1024*1024){technical("Espace disque faible : "+storage.rootPath()+" — libérez de l'espace pour préserver SQLite et les journaux.");break;}}});spaceTimer->start(60000);
+ connect(messageSplit_,&QSplitter::splitterMoved,this,[this]{storePreferences();});auto prefsTimer=new QTimer(this);prefsTimer->setObjectName("preferenceSave");connect(prefsTimer,&QTimer::timeout,this,[this]{savePreferenceSnapshot(true);});prefsTimer->start(30000);auto spaceTimer=new QTimer(this);spaceTimer->setObjectName("storageStatus");connect(spaceTimer,&QTimer::timeout,this,[this,spaceTimer]{
+  if(spaceTimer->property("checking").toBool())return;
+  QStringList paths{QFileInfo(db_.databaseName()).absolutePath()};
+  if(generalCopy_->isChecked())paths<<root_->text();
+  if(selectedLogging_->isChecked())paths<<QFileInfo(selectedLogPath_->text()).absolutePath();
+  paths.removeAll(QString{});paths.removeDuplicates();
+  auto watcher=new QFutureWatcher<QString>(this);
+  spaceTimer->setProperty("checking",true);
+  connect(watcher,&QFutureWatcher<QString>::finished,this,[this,spaceTimer,watcher]{
+   spaceTimer->setProperty("checking",false);
+   const QString low=watcher->result();watcher->deleteLater();
+   if(!low.isEmpty())technical("Espace disque faible : "+low+" — libérez de l'espace pour préserver SQLite et les journaux.");
+  });
+  watcher->setFuture(QtConcurrent::run([paths]{
+   for(const auto& path:paths){QStorageInfo storage(path);if(storage.isValid()&&storage.isReady()&&storage.bytesAvailable()<256LL*1024*1024)return storage.rootPath();}
+   return QString{};
+  }));
+ });spaceTimer->start(60000);
  frequencyDisplay_->setText(QString::number(frequency_->value(),'f',6)+" MHz");
  connect(spectrum_,&Spectrum::tuneRequested,this,[this](qint64 hz){if(selectedRadio_&&selectedRadio_!=&radio_){auto r=selectedRadio_;bool running=r->isRunning();r->stop();r->config.frequency=quint32(hz);if(running)r->start();selectReceiver(r);}else frequency_->setValue(hz/1e6);});
  spectrum_->loadSettings(s);spectrum_->saveSettings(s);view->addAction("Réglages spectre / waterfall…",this,&Window::spectrumOptions)->setObjectName("spectrumSettingsAction");

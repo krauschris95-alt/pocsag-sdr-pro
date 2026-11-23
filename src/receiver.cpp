@@ -1,5 +1,6 @@
 #include "receiver.h"
 #include "dsp.h"
+#include "flexbridge.h"
 #include "soapyradio.h"
 #include "nativeradio.h"
 #include "radiocatalog.h"
@@ -7,6 +8,7 @@
 #include <QFile>
 #include <QMutexLocker>
 #include <functional>
+#include <mutex>
 #include <thread>
 #include <chrono>
 #include <stdexcept>
@@ -33,8 +35,36 @@ void Receiver::run(){
  bool offline=!config.file.isEmpty();int retries=0;
  do {
   QString identity=offline?"IQ: "+config.file:!config.label.isEmpty()?config.label:config.deviceKey.isEmpty()?QString("RTL-SDR index %1").arg(config.index):config.deviceKey;
-  pocsag::Demodulator dsp([&](pocsag::Message m){++decodedFrames_;emit frame(m,config.frequency,identity,QDateTime::currentDateTimeUtc());emit decoded(m.ric,m.function,m.baud,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,config.frequency,identity);},config.baud,config.rate,config.channelBandwidth);
-  int spectrumFrame=0;Consumer consume=[&](const QByteArray& b){iqBytes_+=b.size();if(!offline&&!b.isEmpty())lastLiveIq_=nowMs();if(capture.isOpen()&&capture.write(b)!=b.size()){stopping=true;emit problem("Erreur capture IQ");return;}double power=0;for(int i=0;i+1<b.size();i+=2){double re=(uchar(b[i])-127.5)/128,im=(uchar(b[i+1])-127.5)/128;power+=re*re+im*im;}double db=10*std::log10(qMax(1e-12,power/qMax(1,b.size()/2)));if(config.squelch>-160&&db<config.squelch)dsp.reset();else dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));auto measured=dsp.statistics();words_=measured.words;rejected_=measured.rejected;if((spectrumFrame++%8)==0)emit samples(b);};
+  if(config.protocol==paging::SelectionMode::Reflex){
+   emit problem("ReFLEX n'est pas encore décodé : aucune réception fictive ne sera annoncée.");
+   return;
+  }
+  paging::ProtocolSelector selector;
+  selector.setMode(config.protocol);
+  std::mutex protocolMutex;
+  auto selectProtocol=[&](paging::Protocol protocol){
+   std::lock_guard lock(protocolMutex);
+   if(selector.validatedFrame(protocol,paging::ProtocolSelector::Clock::now()))
+    emit protocolDetected(protocol==paging::Protocol::Pocsag?"POCSAG":protocol==paging::Protocol::Flex?"FLEX":"Inconnu");
+  };
+  paging::FlexBridge flex(config.rate,
+   [&](paging::FlexPage page){
+    selectProtocol(paging::Protocol::Flex);
+    emit flexFrame(page.address,page.baud,page.levels,page.type,page.text,config.frequency,identity,QDateTime::currentDateTimeUtc());
+   },
+   [&](QString error){emit problem(error);});
+  const bool flexEnabled=config.protocol!=paging::SelectionMode::Pocsag&&flex.start();
+  pocsag::Demodulator dsp([&](pocsag::Message m){
+   ++decodedFrames_;
+   if(m.complete)selectProtocol(paging::Protocol::Pocsag);
+   emit frame(m,config.frequency,identity,QDateTime::currentDateTimeUtc());
+   emit decoded(m.ric,m.function,m.baud,QString::fromStdString(m.type),QString::fromStdString(m.text),m.corrected,config.frequency,identity);
+  },config.baud,config.rate,config.channelBandwidth);
+  int spectrumFrame=0;Consumer consume=[&](const QByteArray& b){iqBytes_+=b.size();if(!offline&&!b.isEmpty())lastLiveIq_=nowMs();if(capture.isOpen()&&capture.write(b)!=b.size()){stopping=true;emit problem("Erreur capture IQ");return;}double power=0;for(int i=0;i+1<b.size();i+=2){double re=(uchar(b[i])-127.5)/128,im=(uchar(b[i+1])-127.5)/128;power+=re*re+im*im;}double db=10*std::log10(qMax(1e-12,power/qMax(1,b.size()/2)));if(config.squelch>-160&&db<config.squelch){dsp.reset();}else{
+   if(config.protocol!=paging::SelectionMode::Flex)
+    dsp.cu8(std::span(reinterpret_cast<const unsigned char*>(b.constData()),size_t(b.size())));
+   if(flexEnabled)flex.submit(b);
+  }auto measured=dsp.statistics();words_=measured.words;rejected_=measured.rejected;if((spectrumFrame++%8)==0)emit samples(b);};
   if(offline){QFile file(config.file);if(!file.open(QIODevice::ReadOnly)){emit problem(file.errorString());return;}emit tuned(config.frequency,config.rate,config.bandwidth,config.file);emit state("Lecture IQ hors ligne");while(!stopping&&!file.atEnd()){auto b=file.read(16384);if(b.size()%2){emit problem("IQ tronqué");return;}consume(b);msleep(5);}dsp.finish();emit state("Lecture IQ terminée");return;}
   void* device=nullptr;int(*closeDevice)(void*)=nullptr;int(*exitHack)()=nullptr;int(*stopHack)(void*)=nullptr;QLibrary library(config.deviceKey.startsWith("hackrf:")?qEnvironmentVariable("POCSAG_TEST_HACKRF_LIBRARY","libhackrf"):qEnvironmentVariable("POCSAG_TEST_RTL_LIBRARY","rtlsdr"));
   try {

@@ -13,10 +13,124 @@ struct IntegrationChecks{
  static void require(bool b,std::source_location where=std::source_location::current()){if(!b)throw std::runtime_error("global check line "+std::to_string(where.line()));}
  static qlonglong scalar(Window& w,QString sql){QSqlQuery q(sql,w.db_);require(q.next());return q.value(0).toLongLong();}
  static QByteArray bytes(QString path){QFile f(path);require(f.open(QIODevice::ReadOnly));return f.readAll();}
- static void drain(Window& w){QElapsedTimer t;t.start();do{w.pumpMessages();w.flushJournal();QApplication::processEvents();if(w.pendingMessages_.empty()&&scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")==0)return;QThread::msleep(5);}while(t.elapsed()<60000);require(false);}
+ static void drain(Window& w,std::source_location caller=std::source_location::current()){
+  QElapsedTimer stalled,total;
+  stalled.start();total.start();
+  qlonglong previous=-1;
+  do{
+   w.pumpMessages();w.flushJournal();QApplication::processEvents();
+   auto outstanding=scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")+qlonglong(w.pendingMessages_.size()+w.pendingWrites_);
+   if(!outstanding)return;
+   if(previous<0||outstanding<previous){stalled.restart();previous=outstanding;}
+   QThread::msleep(5);
+  }while(stalled.elapsed()<60000&&total.elapsed()<600000);
+  throw std::runtime_error("journal drain at line "+std::to_string(caller.line())+" outstanding="+std::to_string(previous));
+ }
  static auto stamp(){return QDateTime::fromString("2026-11-05T11:11:33Z",Qt::ISODate);}
  static void receive(Window& w,uint ric,QString text="Texte complet synthétique"){w.received({ric,0,2400,"ALPHA",text.toStdString(),0},169626000,"synthetic",stamp());}
  static QString quote(QString s){s.replace("'","''");return "'"+s+"'";}
+ static void writerRecovery(){
+  QTemporaryDir dir;
+  const auto spool=dir.filePath("incoming-pending");
+  const auto txt=dir.filePath("test-journal.txt");
+  auto lock=QSqlDatabase::addDatabase("QSQLITE","writer-recovery-lock");
+  lock.setDatabaseName(dir.filePath("pocsag.db"));
+  QString retained;
+  QByteArray replay;
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   w.generalCopy_->setChecked(false);
+   w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom,txt_enabled,txt_path) VALUES(42,'Recovery',1,1,1,"+quote(txt)+")");
+   require(lock.open());
+   QSqlQuery hold(lock);require(hold.exec("BEGIN IMMEDIATE"));hold.finish();
+   for(int i=0;i<12;++i)receive(w,42,QString("worker-recovery-%1").arg(i));
+   QElapsedTimer wait;wait.start();
+   while((w.sqliteRetries_==0||QDir(spool).entryList({"*.json"},QDir::Files).size()!=12)&&wait.elapsed()<30000){
+    QApplication::processEvents(QEventLoop::AllEvents,10);QThread::msleep(5);
+   }
+   auto files=QDir(spool).entryList({"*.json"},QDir::Files);
+   require(w.sqliteRetries_>0&&files.size()==12&&scalar(w,"SELECT count(*) FROM messages")==0);
+   retained=QDir(spool).filePath(files.first());replay=bytes(retained);
+  }
+  require(QDir(spool).entryList({"*.json"},QDir::Files).size()==12);
+  require(lock.rollback());lock.close();
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   drain(w);
+   require(scalar(w,"SELECT count(DISTINCT event_uid) FROM messages")==12);
+   QSqlQuery ordered("SELECT text FROM messages ORDER BY id",w.db_);
+   for(int i=0;i<12;++i)require(ordered.next()&&ordered.value(0).toString()==QString("worker-recovery-%1").arg(i));
+   require(!ordered.next());ordered.finish();
+   require(scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=1")==12);
+   require(bytes(txt).count("worker-recovery-")==12);
+   require(QDir(spool).entryList({"*.json"},QDir::Files).isEmpty());
+  }
+  // Reproduce a crash between SQLite commit and deletion of the durable spool.
+  QFile duplicate(retained);require(duplicate.open(QIODevice::WriteOnly));require(duplicate.write(replay)==replay.size());duplicate.close();
+  {
+   Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+   drain(w);
+   require(scalar(w,"SELECT count(*) FROM messages")==12&&bytes(txt).count("worker-recovery-")==12);
+   QSqlQuery q("PRAGMA integrity_check",w.db_);require(q.next()&&q.value(0)=="ok");
+   require(QDir(spool).entryList({"*.json"},QDir::Files).isEmpty());
+  }
+  lock=QSqlDatabase();QSqlDatabase::removeDatabase("writer-recovery-lock");
+  std::cout<<"PASS writer lock, ordered replay after shutdown, committed spool deduplication, 12 exact TXT deliveries and SQLite integrity"<<std::endl;
+ }
+ static void navigationLoad(int rows,int seconds){
+  QTemporaryDir dir;
+  Window w(dir.path(),std::make_unique<FakeSpeech>(),true);
+  w.generalCopy_->setChecked(true);
+  w.root_->setText(dir.filePath("text"));
+  w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(42,'TEST',1,1)");
+  w.sql(QString("WITH RECURSIVE n(x) AS(VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<%1) INSERT INTO messages(ric,type,text,baud,timestamp) SELECT 42,'ALPHA',printf('synthetic-%07d',x),1200,'2026-11-05T12:11:33+01:00' FROM n").arg(rows));
+  w.show();w.refresh();
+  auto waitUntil=[](auto condition,int timeout){
+   QElapsedTimer elapsed;elapsed.start();
+   while(!condition()&&elapsed.elapsed()<timeout){QApplication::processEvents(QEventLoop::AllEvents,10);QThread::msleep(2);}
+   return condition();
+  };
+  require(waitUntil([&]{return w.all_->rowCount()==rows&&w.saved_->rowCount()==rows;},60000));
+  int inserted=0,steps=0,dialogs=0;
+  qint64 gap=0,arrivalMax=0,actionMax=0;QString lastAction;
+  QTimer beat,actions,arrival,closeDetails;
+  QElapsedTimer clock;
+  QEventLoop loop;
+  QObject::connect(&beat,&QTimer::timeout,&loop,[&]{auto ms=clock.restart();gap=qMax(gap,ms);if(ms>150)std::cout<<"late_ms="<<ms<<" last_action="<<lastAction.toStdString()<<std::endl;});
+  QObject::connect(&arrival,&QTimer::timeout,&loop,[&]{QElapsedTimer t;t.start();lastAction="ingestion";receive(w,42,QString("incoming-%1").arg(++inserted));arrivalMax=qMax(arrivalMax,t.elapsed());});
+  QObject::connect(&actions,&QTimer::timeout,&loop,[&]{
+   QElapsedTimer t;t.start();lastAction="scroll-"+QString::number(steps%16);auto table=steps%2?w.savedView_:w.allView_;
+   auto bar=table->verticalScrollBar();
+   bar->setValue(int(qint64(bar->maximum())*((steps*37)%101)/100));
+   switch(steps++%16){
+   case 2: w.search_->setText("synthetic-0");break;
+   case 4: w.search_->clear();break;
+   case 6: table->sortByColumn(0,Qt::DescendingOrder);break;
+   case 8: table->sortByColumn(-1,Qt::AscendingOrder);break;
+   case 10:{
+    auto row=table->rowAt(10);
+    if(row<0)break;
+    auto idx=table->model()->index(row,0);
+    QTimer::singleShot(20,&w,[&]{if(auto dlg=qobject_cast<QDialog*>(QApplication::activeModalWidget())){++dialogs;dlg->accept();}});
+    table->doubleClicked(idx);
+    break;
+   }
+   default:break;
+   }
+   actionMax=qMax(actionMax,t.elapsed());
+  });
+  QObject::connect(&closeDetails,&QTimer::timeout,&loop,[&]{if(auto dlg=qobject_cast<QDialog*>(QApplication::activeModalWidget())){++dialogs;dlg->accept();}});closeDetails.start(30);clock.start();beat.start(10);arrival.start(400);actions.start(250);
+  QTimer::singleShot(seconds*1000,&loop,&QEventLoop::quit);
+  loop.exec();
+  beat.stop();actions.stop();arrival.stop();w.search_->clear();
+  w.allView_->sortByColumn(-1,Qt::AscendingOrder);w.savedView_->sortByColumn(-1,Qt::AscendingOrder);
+  drain(w);
+  require(scalar(w,"SELECT count(*) FROM messages")==rows+inserted);
+  require(scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=1")==inserted);
+  QSqlQuery integrity("PRAGMA integrity_check",w.db_);require(integrity.next()&&integrity.value(0)=="ok");integrity.finish();
+  std::cout<<"history_rows="<<rows<<" seconds="<<seconds<<" inserted="<<inserted<<" scroll_steps="<<steps<<" detail_dialogs="<<dialogs<<" max_ingestion_ms="<<arrivalMax<<" max_action_ms="<<actionMax<<" max_heartbeat_ms="<<gap<<std::endl;
+  require(dialogs>0&&inserted>0&&gap<200);
+ }
  static void restoredLiveOrder(){QTemporaryDir folder;{
  Window w(folder.path(),std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom) VALUES(42,'Test',1,1)");for(int i=0;i<90;++i)receive(w,42,QString("Ancien %1").arg(i));w.show();QApplication::processEvents();w.allView_->sortByColumn(8,Qt::AscendingOrder);w.savedView_->sortByColumn(1,Qt::DescendingOrder);w.storePreferences();}
  Window w(folder.path(),std::make_unique<FakeSpeech>());w.show();QApplication::processEvents();w.testStorage_=false;receive(w,42,"AAA NOUVEAU SYNTHETIQUE");{QEventLoop wait;QTimer::singleShot(300,&wait,&QEventLoop::quit);wait.exec();}QApplication::processEvents();require(w.all_->index(w.all_->rowCount()-1,8).data().toString()=="AAA NOUVEAU SYNTHETIQUE");require(w.saved_->index(w.saved_->rowCount()-1,7).data().toString()=="AAA NOUVEAU SYNTHETIQUE");require(w.allView_->verticalScrollBar()->value()>=w.allView_->verticalScrollBar()->maximum()-2);auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(!qa.isEmpty()){w.resize(1440,980);QApplication::processEvents();w.allView_->scrollToBottom();w.savedView_->scrollToBottom();QApplication::processEvents();w.grab().save(qa+"/live-order-restored.png");}
@@ -27,7 +141,17 @@ struct IntegrationChecks{
   w.sql("UPDATE capcodes SET txt_enabled=1 WHERE ric=2006314");auto lock=QSqlDatabase::addDatabase("QSQLITE","multi-route-lock");lock.setDatabaseName(w.db_.databaseName());require(lock.open());{QSqlQuery q(lock);require(q.exec("BEGIN IMMEDIATE"));}receive(w,2006314,"Après verrou");require(!w.pendingMessages_.empty());require(lock.commit());drain(w);require(bytes(med).count("Après verrou")==1&&bytes(extra).count("Après verrou")==1);lock.close();w.saveOptions();}
  static void blockedBacklog(){QTemporaryDir folder;Window w(folder.path(),std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);auto blocked=folder.path()+"/blocked",healthy=folder.path()+"/healthy.txt";QFile f(blocked);require(f.open(QIODevice::WriteOnly));f.write("KEEP");f.close();w.sql("BEGIN");w.sql("WITH RECURSIVE n(x) AS(VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<1100) INSERT INTO journal_outbox(message_id,path,line) SELECT 0,"+quote(blocked+"/retry.txt")+",CAST('RETRY'||char(13)||char(10) AS BLOB) FROM n");w.sql("INSERT INTO journal_outbox(message_id,path,line) VALUES(0,"+quote(healthy)+",CAST('HEALTHY'||char(13)||char(10) AS BLOB))");w.sql("COMMIT");QElapsedTimer time;time.start();auto delivered=[&]{QFile read(healthy);if(!read.open(QIODevice::ReadOnly)||read.readAll()!="HEALTHY\r\n")return false;return scalar(w,"SELECT count(*) FROM journal_outbox WHERE done=0")==1100;};while(!delivered()&&time.elapsed()<8000){w.flushJournal();QApplication::processEvents();QThread::msleep(10);}require(delivered());require(QFile::remove(blocked));drain(w);require(bytes(blocked+"/retry.txt").count("RETRY")==1100);}
  static void lowerAndVoice(){QTemporaryDir folder;VoiceLog log;{QSettings legacy(folder.path()+"/preferences.ini",QSettings::IniFormat);legacy.setValue("voice/enabled",false);legacy.sync();}Window w(folder.path(),std::make_unique<FakeSpeech>(&log));w.generalCopy_->setChecked(false);require(w.speechSettings_.enabled&&w.voiceAction_->isChecked()&&w.speechSettings_.volume>0);w.sql("INSERT INTO capcodes(ric,alias,active,show_bottom,voice_enabled,txt_enabled) VALUES(2006314,'R-MED1',1,1,1,0)");receive(w,2006314,"Message R-MED1");require(log.began.tryAcquire(1,2000));require(w.all_->rowCount()==1&&w.saved_->rowCount()==1&&w.saved_->index(0,0).data().toString()=="2006314"&&w.saved_->index(0,6).data().toString()=="R-MED1"&&w.saved_->index(0,7).data().toString()=="Message R-MED1");{QMutexLocker guard(&log.mutex);require(log.lines==QStringList{"R-MED1. Message R-MED1"});}receive(w,99,"Non enregistré");require(w.all_->rowCount()==2&&w.saved_->rowCount()==1);w.sql("UPDATE capcodes SET show_bottom=0 WHERE ric=2006314");receive(w,2006314,"Voix indépendante");require(log.began.tryAcquire(1,2000));require(w.saved_->rowCount()==0);w.sql("UPDATE capcodes SET show_bottom=1,voice_enabled=0 WHERE ric=2006314");receive(w,2006314,"Voix OFF");require(!log.began.tryAcquire(1,80)&&w.saved_->rowCount()==3);w.voiceAction_->setChecked(false);w.sql("UPDATE capcodes SET voice_enabled=1 WHERE ric=2006314");receive(w,2006314,"Coupure générale explicite");require(!log.began.tryAcquire(1,80)&&w.voiceAction_->text().contains("COUPÉES"));w.voiceAction_->setChecked(true);w.show();QApplication::processEvents();w.savedSearch_->setText("filtre ancien");require(w.saved_->rowCount()==0);auto reset=w.findChild<QPushButton*>("clearLowerFilter");require(reset&&reset->isVisible());reset->click();require(w.saved_->rowCount()==4);w.filterKeyword_->setText("absent");w.refresh();require(w.all_->rowCount()==0&&w.saved_->rowCount()==4);w.filterKeyword_->clear();w.refresh();w.storePreferences();QSettings settings(w.settingsFile_,QSettings::IniFormat);require(!settings.value("voice/muted").toBool());}
- static void legacyRic(){QTemporaryDir folder;{auto db=QSqlDatabase::addDatabase("QSQLITE","legacy-ric");db.setDatabaseName(folder.path()+"/pocsag.db");require(db.open());{QSqlQuery q(db);require(q.exec("CREATE TABLE capcodes(ric TEXT PRIMARY KEY,alias TEXT,color TEXT,active INTEGER,show_bottom INTEGER,path TEXT,description TEXT)"));require(q.exec("INSERT INTO capcodes VALUES('02006314','R-MED1','#00ffff',1,1,'','')"));require(q.exec("CREATE TABLE messages(id INTEGER PRIMARY KEY,timestamp TEXT,frequency INTEGER,baud INTEGER,ric TEXT,function INTEGER,type TEXT,text TEXT,corrected INTEGER,receiver TEXT)"));require(q.exec("INSERT INTO messages VALUES(1099511627776,'2026-11-05T12:00:00+01:00',169626000,2400,'2006314',0,'ALPHA','LEGACY SYNTHETIC',0,'test')"));require(q.exec("SELECT count(*) FROM messages m JOIN capcodes c ON c.ric=m.ric"));require(q.next()&&q.value(0).toInt()==0);}db.close();}QSqlDatabase::removeDatabase("legacy-ric");Window w(folder.path(),std::make_unique<FakeSpeech>());require(w.all_->rowCount()==1&&w.saved_->rowCount()==1&&w.saved_->index(0,6).data().toString()=="R-MED1");w.generalCopy_->setChecked(false);w.selectedLogging_->setChecked(false);auto file=folder.path()+"/legacy.txt";w.sql("UPDATE capcodes SET txt_path="+quote(file)+",txt_enabled=1");receive(w,2006314,"Legacy routed");drain(w);require(bytes(file).contains("Legacy routed")&&w.saved_->rowCount()==2);}
+ static void legacyRic(){QTemporaryDir folder;{auto db=QSqlDatabase::addDatabase("QSQLITE","legacy-ric");db.setDatabaseName(folder.path()+"/pocsag.db");require(db.open());{QSqlQuery q(db);require(q.exec("CREATE TABLE capcodes(ric TEXT PRIMARY KEY,alias TEXT,color TEXT,active INTEGER,show_bottom INTEGER,path TEXT,description TEXT)"));require(q.exec("INSERT INTO capcodes VALUES('02006314','R-MED1','#00ffff',1,1,'','')"));require(q.exec("CREATE TABLE messages(id INTEGER PRIMARY KEY,timestamp TEXT,frequency INTEGER,baud INTEGER,ric TEXT,function INTEGER,type TEXT,text TEXT,corrected INTEGER,receiver TEXT)"));require(q.exec("INSERT INTO messages VALUES(1099511627776,'2026-11-05T12:00:00+01:00',169626000,2400,'2006314',0,'ALPHA','LEGACY SYNTHETIC',0,'test')"));require(q.exec("SELECT count(*) FROM messages m JOIN capcodes c ON c.ric=m.ric"));require(q.next()&&q.value(0).toInt()==0);}db.close();}QSqlDatabase::removeDatabase("legacy-ric");Window w(folder.path(),std::make_unique<FakeSpeech>());require(w.all_->rowCount()==1&&w.saved_->rowCount()==1&&w.saved_->index(0,6).data().toString()=="R-MED1");
+  QDir backups(folder.filePath("sauvegardes"));
+  const auto versions=backups.entryList({"migration-*"},QDir::Dirs);
+  require(versions.size()==1);
+  {
+   auto copy=QSqlDatabase::addDatabase("QSQLITE","pre-upgrade");
+   copy.setConnectOptions("QSQLITE_OPEN_READONLY");copy.setDatabaseName(backups.filePath(versions.first()+"/pocsag.db"));require(copy.open());
+   QSqlQuery original("SELECT ric,alias FROM capcodes",copy);require(original.next()&&original.value(0)=="02006314"&&original.value(1)=="R-MED1");
+   require(!copy.tables().contains("flex_messages"));
+  }
+  QSqlDatabase::removeDatabase("pre-upgrade");w.generalCopy_->setChecked(false);w.selectedLogging_->setChecked(false);auto file=folder.path()+"/legacy.txt";w.sql("UPDATE capcodes SET txt_path="+quote(file)+",txt_enabled=1");receive(w,2006314,"Legacy routed");drain(w);require(bytes(file).contains("Legacy routed")&&w.saved_->rowCount()==2);}
  static void pages(){QTemporaryDir folder;Window w(folder.path(),std::make_unique<FakeSpeech>());w.sql("WITH RECURSIVE n(x) AS(VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<5000) INSERT INTO messages(id,ric,text) SELECT 1099511627776+x,42,'row-'||x FROM n");MessageModel model(1024);require(model.apply("SELECT m.id,m.text FROM messages m ORDER BY m.id ASC",w.db_));require(model.totalRows()==5000&&model.rowCount()==1024&&model.firstRow()==3976&&model.index(1023,1).data().toString()=="row-5000");model.showFirst();require(model.index(0,1).data().toString()=="row-1");model.showNewer();require(model.firstRow()==1024&&model.index(0,1).data().toString()=="row-1025");model.showLast();model.showOlder();require(model.firstRow()==2952&&model.cachedRows()<=4096);}
  static void profilesUi(){QTemporaryDir folder;Window w(folder.path(),std::make_unique<FakeSpeech>());w.sql("INSERT INTO capcodes(ric,alias) VALUES(760196,'CIP112'),(2006314,'R-MED1'),(2006317,'R-MED2')");auto path=folder.path()+"/profil.txt";std::exception_ptr error;QTimer::singleShot(0,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());try{require(d);for(auto b:d->findChildren<QPushButton*>())if(b->text()=="Ajouter un profil"){b->click();break;}auto t=d->findChild<QTableWidget*>("profileTable");require(t&&t->rowCount()==1);t->item(0,1)->setText("R-MED");t->item(0,2)->setText(path);qobject_cast<QCheckBox*>(t->cellWidget(0,0))->setChecked(true);QTimer::singleShot(10,d,[&]{auto members=qobject_cast<QDialog*>(QApplication::activeModalWidget());try{require(members);auto list=members->findChild<QListWidget*>("memberList");members->findChild<QLineEdit*>("memberSearch")->setText("R-MED");for(int i=0;i<list->count();++i)if(!list->item(i)->isHidden())list->item(i)->setCheckState(Qt::Checked);members->findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Ok)->click();}catch(...){error=std::current_exception();if(members)members->reject();}});qobject_cast<QPushButton*>(t->cellWidget(0,4))->click();if(error)std::rethrow_exception(error);d->findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Save)->click();require(!d->isVisible());}catch(...){error=std::current_exception();if(d)d->reject();}});w.txtProfiles();if(error)std::rethrow_exception(error);require(scalar(w,"SELECT count(*) FROM txt_profile_capcodes")==2);w.generalCopy_->setChecked(false);w.selectedLogging_->setChecked(false);receive(w,2006314,"Profil UI");drain(w);require(bytes(path).contains("Profil UI"));QString qa=qEnvironmentVariable("POCSAG_QA_DIR");if(!qa.isEmpty()){QTimer::singleShot(100,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());if(d){d->grab().save(qa+"/profiles.png");d->reject();}});w.txtProfiles();}}
  static void capPathUi(){QTemporaryDir folder;Window w(folder.path(),std::make_unique<FakeSpeech>());w.sql("INSERT INTO capcodes(ric,alias,path) VALUES(2006314,'R-MED1','C:/legacy-preserved.txt')");auto chosen=folder.path()+"/R-MED choisi.txt";std::exception_ptr error;QTimer::singleShot(0,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());try{require(d);auto t=d->findChild<QTableWidget*>("capcodeTable");require(t&&!t->isColumnHidden(19)&&!t->isColumnHidden(13));QTimer::singleShot(10,d,[&]{auto picker=d->findChild<QFileDialog*>("capcodeFilePicker");try{require(picker&&picker->testOption(QFileDialog::DontConfirmOverwrite)&&picker->fileMode()==QFileDialog::AnyFile);picker->setOption(QFileDialog::DontUseNativeDialog,true);picker->selectFile(chosen);QMetaObject::invokeMethod(picker,"accept",Qt::DirectConnection);}catch(...){error=std::current_exception();if(picker)picker->reject();}});qobject_cast<QPushButton*>(t->cellWidget(0,13))->click();if(error)std::rethrow_exception(error);require(t->item(0,19)->text()==chosen);auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(!qa.isEmpty())d->grab().save(qa+"/capcode-file.png");d->findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Save)->click();require(!d->isVisible());}catch(...){error=std::current_exception();if(d)d->reject();}});w.capcodes();if(error)std::rethrow_exception(error);QSqlQuery q("SELECT txt_path,path FROM capcodes",w.db_);require(q.next()&&q.value(0).toString()==chosen&&q.value(1).toString()=="C:/legacy-preserved.txt");q.finish();w.generalCopy_->setChecked(false);w.selectedLogging_->setChecked(false);receive(w,2006314,"Fichier par ligne");drain(w);require(bytes(chosen).contains("Fichier par ligne"));}
@@ -35,4 +159,16 @@ struct IntegrationChecks{
  static void storageCapture(){auto qa=qEnvironmentVariable("POCSAG_QA_DIR");if(qa.isEmpty())return;QTemporaryDir dir;Window w(dir.path(),std::make_unique<FakeSpeech>());QTimer::singleShot(100,&w,[&]{auto d=qobject_cast<QDialog*>(QApplication::activeModalWidget());require(d);d->grab().save(qa+"/data-storage.png");d->reject();});w.storageOptions();}
  static void migration(){QTemporaryDir folder;auto source=folder.path()+"/source",target=folder.path()+"/destination",locator=folder.path()+"/storage-location.json";{Window w(source,std::make_unique<FakeSpeech>());w.generalCopy_->setChecked(false);receive(w,2006314,"MIGRATION SYNTHETIC");w.sql("INSERT INTO txt_profiles(name,path,enabled) VALUES('Conserver','D:/future.txt',0)");w.storePreferences();w.journalWorker_->shutdown();w.db_.close();}auto result=copyDataStore(source,target,locator);require(result.ok&&QFileInfo::exists(source+"/pocsag.db")&&QFileInfo::exists(result.backup+"/pocsag.db")&&resolveDataStore(folder.path())==target);{Window restored(target,std::make_unique<FakeSpeech>());require(scalar(restored,"SELECT count(*) FROM messages")==1&&scalar(restored,"SELECT count(*) FROM txt_profiles")==1);restored.journalWorker_->shutdown();restored.db_.close();}QString error;require(activateDataStore(source,target,locator,&error)&&resolveDataStore(folder.path())==source);auto before=bytes(locator);auto failure=copyDataStore(source,target,locator);require(!failure.ok&&bytes(locator)==before);require(!copyDataStore(source,source+"/child",locator).ok);{auto busy=QSqlDatabase::addDatabase("QSQLITE","migration-busy");busy.setDatabaseName(source+"/pocsag.db");require(busy.open());QSqlQuery hold(busy);require(hold.exec("BEGIN IMMEDIATE"));auto refused=copyDataStore(source,folder.path()+"/locked-copy",locator);require(!refused.ok&&bytes(locator)==before);require(busy.rollback());hold.finish();busy.close();}QFile impossible(folder.path()+"/locator-blocker");require(impossible.open(QIODevice::WriteOnly));impossible.write("KEEP");impossible.close();auto rollback=copyDataStore(source,folder.path()+"/copy-not-activated",impossible.fileName()+"/location.json");require(!rollback.ok&&QFileInfo::exists(source+"/pocsag.db")&&bytes(impossible.fileName())=="KEEP");}
 };
-int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);QApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+class MeasuredApplication:public QApplication{
+public:
+ using QApplication::QApplication;
+ bool notify(QObject* object,QEvent* event)override{
+  if(!qEnvironmentVariableIsSet("POCSAG_PROFILE_HISTORY")||QThread::currentThread()!=thread())return QApplication::notify(object,event);
+  QByteArray type=object->metaObject()->className();
+  auto name=object->objectName();auto kind=event->type();QElapsedTimer t;t.start();
+  bool ok=QApplication::notify(object,event);
+  if(t.elapsed()>100)std::cout<<"gui_event_ms="<<t.elapsed()<<" receiver="<<type.constData()<<" name="<<name.toStdString()<<" event="<<kind<<std::endl;
+  return ok;
+ }
+};
+int main(int argc,char**argv){QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);MeasuredApplication app(argc,argv);app.setOrganizationName("POCSAG-0110-Tests");app.setApplicationName("Global");try{auto args=app.arguments();if(args.contains("--writer-recovery")){IntegrationChecks::writerRecovery();return 0;}if(args.contains("--navigation-load")){int i=args.indexOf("--navigation-load");IntegrationChecks::navigationLoad(args.value(i+1).toInt(),args.value(i+2).toInt());return 0;}if(args.contains("--backlog-only")){IntegrationChecks::blockedBacklog();std::cout<<"PASS blocked destination does not delay healthy TXT, full write and acknowledgement observed\n";return 0;}if(args.contains("--live-order")){IntegrationChecks::restoredLiveOrder();std::cout<<"PASS restored chronological live view and deferred refresh\n";return 0;}int live=args.indexOf("--live");if(live>=0&&live+1<args.size()){int seconds=1200;int option=args.indexOf("--seconds");if(option>=0&&option+1<args.size())seconds=args[option+1].toInt();IntegrationChecks::live(args[live+1],seconds);return 0;}IntegrationChecks::restoredLiveOrder();IntegrationChecks::paths();IntegrationChecks::routing();IntegrationChecks::blockedBacklog();IntegrationChecks::lowerAndVoice();IntegrationChecks::legacyRic();IntegrationChecks::pages();IntegrationChecks::profilesUi();IntegrationChecks::capPathUi();IntegrationChecks::migration();IntegrationChecks::storageCapture();std::cout<<"PASS per-capcode files, many-to-many profiles/dedup, default speech, R-MED1 lower table, 64-bit paged history, verified reversible migration\n";return 0;}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

@@ -18,9 +18,10 @@ inline LONG WINAPI logWindowsFault(EXCEPTION_POINTERS* p){
  if(f!=INVALID_HANDLE_VALUE){char text[128];int n=std::snprintf(text,sizeof(text),"Windows unhandled exception 0x%08lX at %p\r\n",p->ExceptionRecord->ExceptionCode,p->ExceptionRecord->ExceptionAddress);DWORD written;WriteFile(f,text,DWORD(n),&written,nullptr);CloseHandle(f);}return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif
-inline void logException(QString text){QString dir=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);QDir().mkpath(dir);QFile f(dir+"/exceptions.log");if(f.size()>1024*1024){QFile::remove(f.fileName()+".1");f.rename(f.fileName()+".1");f.setFileName(dir+"/exceptions.log");}if(f.open(QIODevice::WriteOnly|QIODevice::Append))f.write((QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)+" "+text+"\r\n").toUtf8());}
-inline void installExceptionLog(){
- QString dir=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);QDir().mkpath(dir);
+inline QString exceptionLogDirectory;
+inline void logException(QString text){QString dir=exceptionLogDirectory.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):exceptionLogDirectory;QDir().mkpath(dir);QFile f(dir+"/exceptions.log");if(f.size()>1024*1024){QFile::remove(f.fileName()+".1");f.rename(f.fileName()+".1");f.setFileName(dir+"/exceptions.log");}if(f.open(QIODevice::WriteOnly|QIODevice::Append))f.write((QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)+" "+text+"\r\n").toUtf8());}
+inline void installExceptionLog(QString directory={}){
+ QString dir=directory.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):directory;exceptionLogDirectory=dir;QDir().mkpath(dir);
 #ifdef Q_OS_WIN
  auto path=QDir::toNativeSeparators(dir+"/exceptions.log");path.toWCharArray(fatalPath);SetUnhandledExceptionFilter(logWindowsFault);
 #endif
