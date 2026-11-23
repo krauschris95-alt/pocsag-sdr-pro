@@ -19,7 +19,17 @@
 #include <QSqlError>
 #include "datastore.h"
 void Window::sql(const QString& text){QSqlQuery q(db_);if(!q.exec(text))throw std::runtime_error(q.lastError().text().toStdString());}
-static QTableView* table(QSqlQueryModel* model){auto t=new QTableView;t->setModel(model);t->setSelectionBehavior(QAbstractItemView::SelectRows);t->setSelectionMode(QAbstractItemView::ExtendedSelection);t->setAlternatingRowColors(true);t->verticalHeader()->hide();t->verticalHeader()->setDefaultSectionSize(22);t->horizontalHeader()->setStretchLastSection(true);t->horizontalHeader()->setSortIndicator(-1,Qt::AscendingOrder);t->setSortingEnabled(true);t->setWordWrap(false);t->setTextElideMode(Qt::ElideRight);t->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);t->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);t->setFont(QFont("Consolas",10));return t;}
+class MessageTable final:public QTableView{
+protected:
+ void paintEvent(QPaintEvent* event)override{
+  auto messages=static_cast<MessageModel*>(model());
+  QScopedValueRollback<bool> painting(messages->painting,true);
+  QTableView::paintEvent(event);
+ }
+};
+static QTableView* table(QSqlQueryModel* model){auto t=new MessageTable;
+ QPointer<QTableView> view=t;
+ static_cast<MessageModel*>(model)->onPageReady=[view]{if(view)view->viewport()->update();};t->setModel(model);t->setSelectionBehavior(QAbstractItemView::SelectRows);t->setSelectionMode(QAbstractItemView::ExtendedSelection);t->setAlternatingRowColors(true);t->verticalHeader()->hide();t->verticalHeader()->setDefaultSectionSize(22);t->horizontalHeader()->setStretchLastSection(true);t->horizontalHeader()->setSortIndicator(-1,Qt::AscendingOrder);t->setSortingEnabled(true);t->setWordWrap(false);t->setTextElideMode(Qt::ElideRight);t->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);t->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);t->setFont(QFont("Consolas",10));return t;}
 Window::Window(QString storageDirectory,std::unique_ptr<SpeechBackend> speechBackend):speech_(std::move(speechBackend)){
  setWindowTitle("POCSAG SDR Pro — 0.1.19");resize(1440,980);
  auto original=storageDirectory.isEmpty()?QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation):storageDirectory;bootstrapFile_=QDir(original).filePath("storage-location.json");auto dir=storageDirectory.isEmpty()?resolveDataStore(original):storageDirectory;QDir().mkpath(dir);
@@ -85,15 +95,31 @@ void Window::start(QString file){
  radio_.config={quint32(std::llround(frequency_->value()*1e6)),240000,int(gain_->value()*10),int(ppm_->value()),devices_->currentIndex(),file,selectedBaud_};QSettings prefs(settingsFile_,QSettings::IniFormat);radio_.config.deviceKey=devices_->currentData().toString();radio_.config.label=devices_->currentText();bool hack=radio_.config.deviceKey.startsWith("hackrf:");radio_.config.rate=prefs.value("rx/rate",hack?2000000:240000).toUInt();if(hack&&radio_.config.rate<2000000)radio_.config.rate=2000000;radio_.config.automaticGain=prefs.value("rx/agc",false).toBool();radio_.config.bandwidth=prefs.value("rx/bandwidth",0).toUInt();radio_.config.channelBandwidth=prefs.value("rx/channelBandwidth",21000).toUInt();radio_.config.squelch=prefs.value("rx/squelch",-160).toDouble();radio_.config.reconnect=prefs.value("rx/reconnect",true).toBool();radio_.config.vgaGain=prefs.value("rx/vga",20).toInt();if(radio_.config.deviceKey.startsWith("soapy:")||NativeRadio::supports(radio_.config.deviceKey)){auto c=NativeRadio::supports(radio_.config.deviceKey)?NativeRadio::capabilities(radio_.config.deviceKey):SoapyRadio::capabilities(radio_.config.deviceKey);if(!c.error.isEmpty()){technical(c.error);return;}QString prefix=NativeRadio::supports(radio_.config.deviceKey)?"native/"+radio_.config.deviceKey+"/":"soapy/"+radio_.config.deviceKey.mid(6)+"/";quint32 fallback=240000;if(!c.rates.isEmpty())fallback=quint32(*std::min_element(c.rates.begin(),c.rates.end(),[](double a,double b){return std::abs(a-240000)<std::abs(b-240000);}));radio_.config.rate=prefs.value(prefix+"rate",fallback).toUInt();radio_.config.automaticGain=c.agc&&prefs.value(prefix+"agc",radio_.config.deviceKey.startsWith("airspyhf:")).toBool();radio_.config.ppm=c.ppm?int(ppm_->value()):0;radio_.config.gain=int(std::clamp(gain_->value(),c.gainMin,c.gainMax)*10);radio_.config.bandwidth=c.bandwidth?prefs.value(prefix+"bandwidth",0).toUInt():0;radio_.config.antenna=prefs.value(prefix+"antenna").toString();}selectReceiver(&radio_);radio_.start();
 }
 void Window::flushJournal(){pumpMessages();if(journalWorker_&&!journalWorker_->flush(disabledTypes()))technical("Délai dépassé pour la file TXT ; les messages restent en SQLite");}
-void Window::refresh(){
+void Window::refresh(){refreshHistory(false);}
+void Window::refreshHistory(bool insertsOnly){
  emit lowerFilterChanged(savedSearch_&&!savedSearch_->text().isEmpty());
- bool followAll=autoscroll_&&allView_->verticalScrollBar()->value()>=allView_->verticalScrollBar()->maximum()-2;bool followSaved=autoscroll_&&savedView_->verticalScrollBar()->value()>=savedView_->verticalScrollBar()->maximum()-2;
  auto quote=[](QString value){value.replace("'","''");return value;};
  auto query=[&](bool saved,QString filter){QString select="SELECT printf('%07d',m.ric) AS Capcode,substr(m.timestamp,12,8) AS Heure,(substr(m.timestamp,9,2)||'/'||substr(m.timestamp,6,2)||'/'||substr(m.timestamp,1,4)) AS Date,'POCSAG' AS Mode,m.type AS Type,m.baud AS Vitesse,";if(saved)select+="c.alias AS Alias,";else select+="printf('%0.6f MHz',m.frequency/1000000.0) AS Fréquence,m.receiver AS Source,";select+="m.text AS Message FROM messages m LEFT JOIN capcodes c ON CAST(c.ric AS INTEGER)=CAST(m.ric AS INTEGER) WHERE 1=1 ";QStringList types{"'AMBIGUOUS'","'INCOMPLETE'"};if(allowAlpha_->isChecked())types<<"'ALPHA'";if(allowNumeric_->isChecked())types<<"'NUMERIC'";if(allowTone_->isChecked())types<<"'TONE'";if(allowDiagnostic_->isChecked())types<<"'DIAGNOSTIC'";select+=types.isEmpty()?"AND 0 ":"AND m.type IN ("+types.join(',')+") ";if(saved)select+="AND c.active=1 AND c.show_bottom=1 ";if(!filter.isEmpty()){filter=quote(filter);select+="AND (m.text LIKE '%"+filter+"%' OR printf('%07d',m.ric) LIKE '%"+filter+"%' OR c.alias LIKE '%"+filter+"%') ";}
  if(!saved){if(filterRic_&&!filterRic_->text().isEmpty())select+="AND m.ric="+QString::number(filterRic_->text().toUInt())+" ";if(filterAlias_&&!filterAlias_->text().isEmpty())select+="AND c.alias LIKE '%"+quote(filterAlias_->text())+"%' ";if(filterKeyword_&&!filterKeyword_->text().isEmpty())select+="AND m.text LIKE '%"+quote(filterKeyword_->text())+"%' ";if(filterFrequency_&&filterFrequency_->value()>0)select+="AND m.frequency="+QString::number(qRound64(filterFrequency_->value()*1e6))+" ";if(filterBaud_&&filterBaud_->currentIndex()>0)select+="AND m.baud="+filterBaud_->currentText()+" ";if(filterType_&&filterType_->currentIndex()>0)select+="AND m.type='"+filterType_->currentText()+"' ";if(filterFrom_){auto dt=QDateTime(filterFrom_->date(),filterFrom_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)>=julianday('"+dt.toString(Qt::ISODate)+"') ";}if(filterTo_){auto dt=QDateTime(filterTo_->date(),filterTo_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)<=julianday('"+dt.toString(Qt::ISODate)+"') ";}}return select+"ORDER BY m.id ASC";};
- QHash<QString,QColor> colors;QSqlQuery colorQuery("SELECT printf('%07d',ric),color FROM capcodes",db_);while(colorQuery.next())colors.insert(colorQuery.value(0).toString(),QColor(colorQuery.value(1).toString()));
+ QHash<QString,QColor> colors;
+ QList<QVariantList> capcodes;
+ QSqlQuery colorQuery("SELECT printf('%07d',ric),color,alias,active,show_bottom FROM capcodes ORDER BY ric",db_);
+ while(colorQuery.next()){
+  colors.insert(colorQuery.value(0).toString(),QColor(colorQuery.value(1).toString()));
+  capcodes.append({colorQuery.value(0),colorQuery.value(1),colorQuery.value(2),colorQuery.value(3),colorQuery.value(4)});
+ }
+ if(capcodes!=historyCapcodes_){insertsOnly=false;historyCapcodes_=std::move(capcodes);}
  static_cast<MessageModel*>(all_)->colors=colors;static_cast<MessageModel*>(saved_)->colors=colors;
- auto update=[this](MessageModel* model,QString query,bool follow){if(!model->apply(query,db_,follow)){technical("Rafraîchissement SQLite différé");if(refreshTimer_)refreshTimer_->start(500);}};update(static_cast<MessageModel*>(all_),query(false,search_->text()),followAll);update(static_cast<MessageModel*>(saved_),query(true,savedSearch_->text()),followSaved);if(followAll)allView_->scrollToBottom();if(followSaved)savedView_->scrollToBottom();
+ auto update=[this,insertsOnly](MessageModel* model,QTableView* view,const QString& sql){
+  auto follow=[this,view]{auto bar=view->verticalScrollBar();return autoscroll_&&view->horizontalHeader()->sortIndicatorSection()<0&&bar->value()>=bar->maximum()-2;};
+  auto wasFollowing=std::make_shared<bool>(false);
+  auto check=[follow,wasFollowing]{return *wasFollowing=follow();};
+  auto completed=[view,wasFollowing]{if(*wasFollowing)view->scrollToBottom();};
+  if(testStorage_){if(model->apply(sql,db_,check(),insertsOnly))completed();}
+  else model->applyAsync(sql,db_,insertsOnly,check,completed);
+ };
+ update(static_cast<MessageModel*>(all_),allView_,query(false,search_->text()));
+ update(static_cast<MessageModel*>(saved_),savedView_,query(true,savedSearch_->text()));
 
 }
 void Window::copyTable(QTableView* view){QStringList lines;for(const auto& idx:view->selectionModel()->selectedRows()){QStringList cells;for(int c=0;c<view->model()->columnCount();++c)cells<<view->model()->index(idx.row(),c).data().toString();lines<<cells.join('\t');}QApplication::clipboard()->setText(lines.join('\n'));}
