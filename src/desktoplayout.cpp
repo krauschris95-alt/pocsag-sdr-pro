@@ -8,6 +8,8 @@
 #include "soapyradio.h"
 #include "cpucaps.h"
 #include <QJsonDocument>
+#include <QFutureWatcher>
+#include <QtConcurrent/QtConcurrentRun>
 void Window::scheduleRefresh(){if(testStorage_&&!asyncHistory_)refreshHistory(true);else if(!refreshTimer_->isActive())refreshTimer_->start(150);}
 void Window::storePreferences(){savePreferenceSnapshot(false);}
 void Window::savePreferenceSnapshot(bool background){
@@ -52,7 +54,24 @@ void Window::finishLayout(){
  QSettings prefs(settingsFile_,QSettings::IniFormat);prefs.setValue("windows/startup",value);});
  auto filters=new QDialog(this);filters->setWindowTitle("Filtres d'affichage — historique et journaux inchangés");auto form=new QFormLayout(filters);filterRic_=new QLineEdit;filterAlias_=new QLineEdit;filterKeyword_=new QLineEdit;filterFrequency_=new QDoubleSpinBox;filterFrequency_->setRange(0,6000);filterFrequency_->setDecimals(6);filterFrequency_->setSpecialValueText("Toutes");filterFrequency_->setSuffix(" MHz");filterBaud_=new QComboBox;filterBaud_->addItems({"Tous","512","1200","2400"});filterType_=new QComboBox;filterType_->addItems({"Tous","ALPHA","NUMERIC","TONE","DIAGNOSTIC","AMBIGUOUS","INCOMPLETE"});filterFrom_=new QDateTimeEdit(QDateTime(QDate(1970,1,1),QTime(0,0)));filterTo_=new QDateTimeEdit(QDateTime(QDate(2100,1,1),QTime(0,0)));for(auto edit:{filterFrom_,filterTo_}){edit->setCalendarPopup(true);edit->setDisplayFormat("dd/MM/yyyy HH:mm:ss");}form->addRow("Capcode exact",filterRic_);form->addRow("Nom personnalisé",filterAlias_);form->addRow("Mot-clé",filterKeyword_);form->addRow("Fréquence",filterFrequency_);form->addRow("Vitesse",filterBaud_);form->addRow("Type",filterType_);form->addRow("Depuis (Bruxelles)",filterFrom_);form->addRow("Jusqu'à (Bruxelles)",filterTo_);auto buttons=new QDialogButtonBox(QDialogButtonBox::Apply|QDialogButtonBox::Reset|QDialogButtonBox::Close);form->addRow(buttons);connect(buttons->button(QDialogButtonBox::Apply),&QPushButton::clicked,this,&Window::refresh);connect(buttons->button(QDialogButtonBox::Reset),&QPushButton::clicked,this,[this]{filterRic_->clear();filterAlias_->clear();filterKeyword_->clear();filterFrequency_->setValue(0);filterBaud_->setCurrentIndex(0);filterType_->setCurrentIndex(0);filterFrom_->setDateTime(QDateTime(QDate(1970,1,1),QTime(0,0)));filterTo_->setDateTime(QDateTime(QDate(2100,1,1),QTime(0,0)));refresh();});connect(buttons,&QDialogButtonBox::rejected,filters,&QDialog::hide);tools->addAction("Rechercher / filtrer l'historique…",filters,&QDialog::show);
  logs->addAction("Ouvrir le fichier TXT actif",this,[this]{QDesktopServices::openUrl(QUrl::fromLocalFile(generalJournalPath(QDateTime::currentDateTimeUtc())));});
- connect(messageSplit_,&QSplitter::splitterMoved,this,[this]{storePreferences();});auto prefsTimer=new QTimer(this);prefsTimer->setObjectName("preferenceSave");connect(prefsTimer,&QTimer::timeout,this,[this]{savePreferenceSnapshot(true);});prefsTimer->start(30000);auto spaceTimer=new QTimer(this);spaceTimer->setObjectName("storageStatus");connect(spaceTimer,&QTimer::timeout,this,[this]{QStringList paths{QFileInfo(db_.databaseName()).absolutePath()};if(generalCopy_->isChecked())paths<<root_->text();if(selectedLogging_->isChecked())paths<<QFileInfo(selectedLogPath_->text()).absolutePath();for(auto path:paths){QStorageInfo storage(path);if(storage.isValid()&&storage.isReady()&&storage.bytesAvailable()<256LL*1024*1024){technical("Espace disque faible : "+storage.rootPath()+" — libérez de l'espace pour préserver SQLite et les journaux.");break;}}});spaceTimer->start(60000);
+ connect(messageSplit_,&QSplitter::splitterMoved,this,[this]{storePreferences();});auto prefsTimer=new QTimer(this);prefsTimer->setObjectName("preferenceSave");connect(prefsTimer,&QTimer::timeout,this,[this]{savePreferenceSnapshot(true);});prefsTimer->start(30000);auto spaceTimer=new QTimer(this);spaceTimer->setObjectName("storageStatus");connect(spaceTimer,&QTimer::timeout,this,[this,spaceTimer]{
+  if(spaceTimer->property("checking").toBool())return;
+  QStringList paths{QFileInfo(db_.databaseName()).absolutePath()};
+  if(generalCopy_->isChecked())paths<<root_->text();
+  if(selectedLogging_->isChecked())paths<<QFileInfo(selectedLogPath_->text()).absolutePath();
+  paths.removeAll(QString{});paths.removeDuplicates();
+  auto watcher=new QFutureWatcher<QString>(this);
+  spaceTimer->setProperty("checking",true);
+  connect(watcher,&QFutureWatcher<QString>::finished,this,[this,spaceTimer,watcher]{
+   spaceTimer->setProperty("checking",false);
+   const QString low=watcher->result();watcher->deleteLater();
+   if(!low.isEmpty())technical("Espace disque faible : "+low+" — libérez de l'espace pour préserver SQLite et les journaux.");
+  });
+  watcher->setFuture(QtConcurrent::run([paths]{
+   for(const auto& path:paths){QStorageInfo storage(path);if(storage.isValid()&&storage.isReady()&&storage.bytesAvailable()<256LL*1024*1024)return storage.rootPath();}
+   return QString{};
+  }));
+ });spaceTimer->start(60000);
  frequencyDisplay_->setText(QString::number(frequency_->value(),'f',6)+" MHz");
  connect(spectrum_,&Spectrum::tuneRequested,this,[this](qint64 hz){if(selectedRadio_&&selectedRadio_!=&radio_){auto r=selectedRadio_;bool running=r->isRunning();r->stop();r->config.frequency=quint32(hz);if(running)r->start();selectReceiver(r);}else frequency_->setValue(hz/1e6);});
  spectrum_->loadSettings(s);spectrum_->saveSettings(s);view->addAction("Réglages spectre / waterfall…",this,&Window::spectrumOptions)->setObjectName("spectrumSettingsAction");

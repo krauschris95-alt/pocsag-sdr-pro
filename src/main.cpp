@@ -9,7 +9,17 @@
 #include <QSettings>
 #include <QTemporaryDir>
 int main(int argc,char** argv){
- SafeApplication app(argc,argv);app.setOrganizationName("POCSAG-SDR-Pro");app.setApplicationName("POCSAG-SDR-Pro");installExceptionLog();auto args=app.arguments();
+ SafeApplication app(argc,argv);app.setOrganizationName("POCSAG-SDR-Pro");app.setApplicationName("POCSAG-SDR-Pro");auto args=app.arguments();
+ QString isolated;
+ const int profile=args.indexOf("--isolated-profile");
+ if(profile>=0){
+  isolated=args.value(profile+1);
+  if(!QDir::isAbsolutePath(isolated)||!QDir().mkpath(isolated))return 2;
+  QSettings::setDefaultFormat(QSettings::IniFormat);
+  QSettings::setPath(QSettings::IniFormat,QSettings::UserScope,isolated);
+  QSettings::setPath(QSettings::IniFormat,QSettings::SystemScope,isolated);
+ }
+ installExceptionLog(isolated);
  int probe=args.indexOf("--probe-report");
  if(probe>=0&&probe+1<args.size()){
   Receiver receiver;int freqArg=args.indexOf("--frequency");if(freqArg>=0&&freqArg+1<args.size())receiver.config.frequency=quint32(args[freqArg+1].toDouble()*1e6);int seconds=5;int secArg=args.indexOf("--seconds");if(secArg>=0&&secArg+1<args.size())seconds=std::clamp(args[secArg+1].toInt(),1,60);QString error,state;quint64 bytes=0;int messages=0;auto devices=Receiver::devices();
@@ -18,5 +28,5 @@ int main(int argc,char** argv){
   QObject::connect(&receiver,&Receiver::samples,&app,[&](QByteArray b){bytes+=b.size();});QObject::connect(&receiver,&Receiver::frame,&app,[&](pocsag::Message m){if(m.type=="ALPHA"||m.type=="NUMERIC")++messages;});
   QTimer::singleShot(seconds*1000,&app,[&]{receiver.stop();QFile f(args[probe+1]);if(!f.open(QIODevice::WriteOnly)){app.exit(2);return;}f.write(QJsonDocument(QJsonObject{{"devices",devices.join("; ")},{"frequency_hz",double(receiver.config.frequency)},{"sample_rate",double(receiver.config.rate)},{"duration_seconds",seconds},{"spectrum_bytes",double(bytes)},{"messages_decoded",messages},{"state",state},{"error",error},{"hardware_read_ok",bytes>0&&error.isEmpty()}}).toJson());app.exit(bytes>0&&error.isEmpty()?0:1);});receiver.start();return app.exec();
  }
- try{int freqArg=args.indexOf("--frequency");if(freqArg>=0&&freqArg+1<args.size())QSettings().setValue("frequency",args[freqArg+1].toDouble());int shot=args.indexOf("--screenshot");QTemporaryDir screenshotData;int data=args.indexOf("--data-directory");QString explicitData=data>=0&&data+1<args.size()?args[data+1]:QString{};Window w(shot>=0?screenshotData.path():explicitData,{},true);w.show();if(shot>=0&&shot+1<args.size())QTimer::singleShot(500,&w,[&]{bool ok=w.grab().save(args[shot+1]);app.exit(ok?0:2);});return app.exec();}catch(const std::exception& e){QMessageBox::critical(nullptr,"Démarrage impossible",QString::fromUtf8(e.what()));return 1;}
+ try{int freqArg=args.indexOf("--frequency");if(freqArg>=0&&freqArg+1<args.size())QSettings().setValue("frequency",args[freqArg+1].toDouble());int shot=args.indexOf("--screenshot");QTemporaryDir screenshotData;int data=args.indexOf("--data-directory");QString explicitData=data>=0&&data+1<args.size()?args[data+1]:QString{};Window w(!isolated.isEmpty()?isolated:(shot>=0?screenshotData.path():explicitData),{},true);w.show();if(shot>=0&&shot+1<args.size())QTimer::singleShot(500,&w,[&]{bool ok=w.grab().save(args[shot+1]);app.exit(ok?0:2);});return app.exec();}catch(const std::exception& e){QMessageBox::critical(nullptr,"Démarrage impossible",QString::fromUtf8(e.what()));return 1;}
 }
