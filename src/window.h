@@ -64,7 +64,7 @@ private:
  QComboBox *format_=nullptr,*step_=nullptr;
  QCheckBox *daily_=nullptr;QLineEdit *root_=nullptr,*profileName_=nullptr;QLabel* activePath_=nullptr;
  bool glacier_=true;int textSize_=1;QLabel *frequencyMeta_=nullptr,*presentationState_=nullptr;bool eventFilter(QObject* object,QEvent* event)override;void frequencyDialog();bool tuneSelected(quint32 hz,QString* error=nullptr);void resizeEvent(QResizeEvent* event)override;void adaptPresentation();void setupPresentation();void applyPresentation();void updatePresentationState();
- void sql(const QString& text);void refresh();void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
+ void sql(const QString& text);void refresh();void refreshHistory(bool insertsOnly);void received(pocsag::Message m,quint32 frequency=0,QString receiver={},QDateTime timestamp={});void start(QString file={});
  void capcodes();void journal();void configureJournals(bool focusPermanent);void txtProfiles();void storageOptions();void exportTable(QTableView* view);void copyTable(QTableView* view);void failure(QString message);
  void flushJournal();
  void setupOptions(QAction* start,QAction* stop,QAction* open,QAction* cap,QAction* log,QMenu* view,QMenu* help);
