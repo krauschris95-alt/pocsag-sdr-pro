@@ -50,6 +50,32 @@ static void run(int size){
  model.showLast();
  require(model.index(model.rowCount()-1,1).data().toString()=="new","last message");
  require(q.exec("PRAGMA integrity_check")&&q.next()&&q.value(0).toString()=="ok","integrity");
+ QElapsedTimer heartbeat;
+ heartbeat.start();
+ qint64 maxGap=0;
+ int ticks=0;
+ QTimer pulse;
+ pulse.setInterval(5);
+ QObject::connect(&pulse,&QTimer::timeout,&loop,[&]{
+  maxGap=qMax(maxGap,heartbeat.restart());
+  ++ticks;
+ });
+ pulse.start();
+ auto filter=query;
+ filter.replace("1=1","m.text LIKE '%00042%'");
+ model.applyAsync(filter,db,false,[]{return false;},[]{});
+ auto latest=query;
+ latest.replace("1=1","m.text LIKE '%message%'");
+ bool done=false;
+ model.applyAsync(latest,db,false,[]{return false;},[&]{done=true;loop.quit();});
+ timeout.start(30000);
+ heartbeat.restart();
+ loop.exec();
+ pulse.stop();
+ maxGap=qMax(maxGap,heartbeat.elapsed());
+ require(done&&ticks>0&&maxGap<200,"GUI heartbeat during searches");
+ require(model.totalRows()==size,"latest search must win");
+ std::cout<<"search_max_heartbeat_ms="<<maxGap<<" ";
  std::cout<<"history_rows="<<size<<" sorted_paint_ms="<<paintMs<<std::endl;
 }
 

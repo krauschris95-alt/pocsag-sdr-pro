@@ -44,24 +44,88 @@ public:
  // A bounded visible window is not a retention limit: navigate across all 64-bit rows.
  qint64 totalRows()const{return totalRows_;}qint64 firstRow()const{return first_;}
  void showOlder(){move(qMax<qint64>(0,first_-windowRows_));}void showNewer(){move(qMin(qMax<qint64>(0,totalRows_-windowRows_),first_+windowRows_));}void showFirst(){move(0);}void showLast(){move(qMax<qint64>(0,totalRows_-windowRows_));}
- bool apply(QString query,const QSqlDatabase& db,bool followTail=true,bool insertsOnly=false){bool changed=query!=base_;db_=db;QString body=query.left(query.lastIndexOf("ORDER BY"));const bool incremental=insertsOnly&&!changed&&hasWatermark_;
-  QSqlQuery watermark(db_);
-  if(!watermark.exec("SELECT max(id) FROM messages")||!watermark.next()){
-   if(problem)problem(watermark.lastError().text());
-   return false;
+ struct Snapshot{QVariant newest;qint64 rows=0;QString error;};
+ static Snapshot countRows(QSqlDatabase db,const QString& body,bool incremental,qint64 lastId){
+  Snapshot result;
+  if(!db.transaction()){result.error=db.lastError().text();return result;}
+  QSqlQuery q(db);
+  if(q.exec("SELECT max(id) FROM messages")&&q.next()){
+   result.newest=q.value(0);
+   q.finish();
+   QString filtered=body;
+   if(incremental)filtered+=" AND m.id > ?";
+   if(q.prepare("SELECT count(*) FROM ("+filtered+")")){
+    if(incremental)q.addBindValue(lastId);
+    if(q.exec()&&q.next())result.rows=q.value(0).toLongLong();
+   }
   }
-  const QVariant newest=watermark.value(0);
-  watermark.finish();
-  QString countSql="SELECT count(*) FROM ("+body+")";
-  if(incremental){
-   // All callers enabling this path have only appended committed messages.
-   countSql="SELECT count(*) FROM ("+body+" AND m.id > ? AND m.id <= ?)";
+  if(q.lastError().isValid())result.error=q.lastError().text();
+  q.finish();
+  if(!db.commit()&&result.error.isEmpty())result.error=db.lastError().text();
+  return result;
+ }
+ bool apply(QString query,const QSqlDatabase& db,bool followTail=true,bool insertsOnly=false){
+  db_=db;
+  bool incremental=insertsOnly&&query==base_&&hasWatermark_;
+  auto body=query.left(query.lastIndexOf("ORDER BY"));
+  return accept(query,countRows(db,body,incremental,lastId_),followTail,incremental);
+ }
+ void applyAsync(QString query,const QSqlDatabase& db,bool insertsOnly,std::function<bool()> follow,std::function<void()> completed){
+  if(counting_){
+   if(!insertsOnly||query!=requestedQuery_)++revision_;
+   bool full=pendingFull_||!insertsOnly;
+   pendingFull_=full;
+   pending_=[this,query,db,full,follow,completed]{applyAsync(query,db,!full,follow,completed);};
+   return;
   }
-  QSqlQuery count(db_);
-  count.prepare(countSql);
-  if(incremental){count.addBindValue(lastId_);count.addBindValue(newest);}
-  if(!count.exec()||!count.next()){if(problem)problem(count.lastError().text());return false;}qint64 actual=(incremental?totalRows_:0)+count.value(0).toLongLong();count.finish();hasWatermark_=!newest.isNull();lastId_=newest.toLongLong();qint64 first=first_;if(changed||(followTail&&column_<0))first=qMax<qint64>(0,actual-windowRows_);first=qMin(first,qMax<qint64>(0,actual-windowRows_));int visible=int(qMin<qint64>(windowRows_,actual-first));bool append=!changed&&first==first_&&column_<0&&visible>=total_&&!headers_.isEmpty();totalRows_=actual;
-  if(!incremental||actual!=previousTotal_){++generation_;}previousTotal_=actual;
+  counting_=true;
+  requestedQuery_=query;
+  db_=db;
+  bool incremental=insertsOnly&&query==base_&&hasWatermark_;
+  auto watcher=new QFutureWatcher<Snapshot>(this);
+  connect(watcher,&QFutureWatcher<Snapshot>::finished,this,[this,watcher,query,incremental,follow,completed,rev=revision_]{
+   auto result=watcher->result();
+   watcher->deleteLater();
+   counting_=false;
+   if(rev==revision_&&accept(query,result,follow(),incremental))completed();
+   auto next=std::move(pending_);
+   pending_={};
+   pendingFull_=false;
+   if(next)next();
+  });
+  auto body=query.left(query.lastIndexOf("ORDER BY"));
+  watcher->setFuture(QtConcurrent::run([file=db.databaseName(),body,incremental,last=lastId_]{
+   return readOnly<Snapshot>(file,[&](QSqlDatabase db){return countRows(db,body,incremental,last);});
+  }));
+ }
+private:
+ bool counting_=false,pendingFull_=false;
+ quint64 revision_=0;
+ QString requestedQuery_;
+ std::function<void()> pending_;
+ template<class Result,class Read>
+ static Result readOnly(const QString& file,Read read){
+  auto name=QUuid::createUuid().toString();
+  Result result;
+  {
+   auto db=QSqlDatabase::addDatabase("QSQLITE",name);
+   db.setDatabaseName(file);
+   db.setConnectOptions("QSQLITE_OPEN_READONLY;QSQLITE_BUSY_TIMEOUT=100");
+   if(db.open())result=read(db);
+   else result.error=db.lastError().text();
+  }
+  QSqlDatabase::removeDatabase(name);
+  return result;
+ }
+ bool accept(const QString& query,const Snapshot& snapshot,bool followTail,bool incremental){
+  if(!snapshot.error.isEmpty()){hasWatermark_=false;if(problem)problem(snapshot.error);return false;}
+  const bool changed=query!=base_;
+  const QString body=query.left(query.lastIndexOf("ORDER BY"));
+  const qint64 actual=(incremental?totalRows_:0)+snapshot.rows;
+  lastId_=snapshot.newest.toLongLong();
+  hasWatermark_=!snapshot.newest.isNull();
+  qint64 first=first_;if(changed||(followTail&&column_<0))first=qMax<qint64>(0,actual-windowRows_);first=qMin(first,qMax<qint64>(0,actual-windowRows_));int visible=int(qMin<qint64>(windowRows_,actual-first));bool append=!changed&&first==first_&&column_<0&&visible>=total_&&!headers_.isEmpty();totalRows_=actual;
+  if(!incremental||!append||visible!=total_)++generation_;
   if(append){if(visible>total_){beginInsertRows({},total_,visible-1);
     if(incremental){
      // Completed chronological pages retain their position after an append.
@@ -72,6 +136,7 @@ public:
    }else if(!incremental){pages_.clear();order_.clear();if(total_)emit dataChanged(index(0,0),index(total_-1,headers_.size()-1));}}
   else{beginResetModel();base_=query;first_=first;total_=visible;pages_.clear();order_.clear();QSqlQuery shape(db_);if(shape.exec(body+" LIMIT 0")){headers_.clear();auto record=shape.record();for(int i=0;i<record.count();++i)headers_<<record.fieldName(i);}shape.finish();endResetModel();}return true;
  }
+public:
  void sort(int column,Qt::SortOrder order)override{column_=column;sortOrder_=order;if(base_.isEmpty())return;move(column<0?qMax<qint64>(0,totalRows_-windowRows_):0);}
  int cachedRows()const{int n=0;for(auto& p:pages_)n+=p.size();return n;}
 private:
@@ -83,7 +148,7 @@ private:
  struct PageQuery{QString sql;int columns;bool reverse;};
  struct PageResult{QVector<QVariantList> rows;QString error;};
  quint64 generation_=0;
- qint64 previousTotal_=0;
+
  bool loading_=false;
  PageQuery pageQuery(int page)const{
   QString body=base_.left(base_.lastIndexOf("ORDER BY"));
@@ -135,17 +200,7 @@ private:
    if(onPageReady)onPageReady();
   });
   watcher->setFuture(QtConcurrent::run([file,request]{
-   auto name=QUuid::createUuid().toString();
-   PageResult result;
-   {
-    auto db=QSqlDatabase::addDatabase("QSQLITE",name);
-    db.setDatabaseName(file);
-    db.setConnectOptions("QSQLITE_OPEN_READONLY;QSQLITE_BUSY_TIMEOUT=100");
-    if(db.open())result=readPage(db,request);
-    else result.error=db.lastError().text();
-   }
-   QSqlDatabase::removeDatabase(name);
-   return result;
+   return readOnly<PageResult>(file,[&](const QSqlDatabase& db){return readPage(db,request);});
   }));
  }
 public:

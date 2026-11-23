@@ -98,13 +98,21 @@ void Window::flushJournal(){pumpMessages();if(journalWorker_&&!journalWorker_->f
 void Window::refresh(){refreshHistory(false);}
 void Window::refreshHistory(bool insertsOnly){
  emit lowerFilterChanged(savedSearch_&&!savedSearch_->text().isEmpty());
- bool followAll=autoscroll_&&allView_->verticalScrollBar()->value()>=allView_->verticalScrollBar()->maximum()-2;bool followSaved=autoscroll_&&savedView_->verticalScrollBar()->value()>=savedView_->verticalScrollBar()->maximum()-2;
  auto quote=[](QString value){value.replace("'","''");return value;};
  auto query=[&](bool saved,QString filter){QString select="SELECT printf('%07d',m.ric) AS Capcode,substr(m.timestamp,12,8) AS Heure,(substr(m.timestamp,9,2)||'/'||substr(m.timestamp,6,2)||'/'||substr(m.timestamp,1,4)) AS Date,'POCSAG' AS Mode,m.type AS Type,m.baud AS Vitesse,";if(saved)select+="c.alias AS Alias,";else select+="printf('%0.6f MHz',m.frequency/1000000.0) AS Fréquence,m.receiver AS Source,";select+="m.text AS Message FROM messages m LEFT JOIN capcodes c ON CAST(c.ric AS INTEGER)=CAST(m.ric AS INTEGER) WHERE 1=1 ";QStringList types{"'AMBIGUOUS'","'INCOMPLETE'"};if(allowAlpha_->isChecked())types<<"'ALPHA'";if(allowNumeric_->isChecked())types<<"'NUMERIC'";if(allowTone_->isChecked())types<<"'TONE'";if(allowDiagnostic_->isChecked())types<<"'DIAGNOSTIC'";select+=types.isEmpty()?"AND 0 ":"AND m.type IN ("+types.join(',')+") ";if(saved)select+="AND c.active=1 AND c.show_bottom=1 ";if(!filter.isEmpty()){filter=quote(filter);select+="AND (m.text LIKE '%"+filter+"%' OR printf('%07d',m.ric) LIKE '%"+filter+"%' OR c.alias LIKE '%"+filter+"%') ";}
  if(!saved){if(filterRic_&&!filterRic_->text().isEmpty())select+="AND m.ric="+QString::number(filterRic_->text().toUInt())+" ";if(filterAlias_&&!filterAlias_->text().isEmpty())select+="AND c.alias LIKE '%"+quote(filterAlias_->text())+"%' ";if(filterKeyword_&&!filterKeyword_->text().isEmpty())select+="AND m.text LIKE '%"+quote(filterKeyword_->text())+"%' ";if(filterFrequency_&&filterFrequency_->value()>0)select+="AND m.frequency="+QString::number(qRound64(filterFrequency_->value()*1e6))+" ";if(filterBaud_&&filterBaud_->currentIndex()>0)select+="AND m.baud="+filterBaud_->currentText()+" ";if(filterType_&&filterType_->currentIndex()>0)select+="AND m.type='"+filterType_->currentText()+"' ";if(filterFrom_){auto dt=QDateTime(filterFrom_->date(),filterFrom_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)>=julianday('"+dt.toString(Qt::ISODate)+"') ";}if(filterTo_){auto dt=QDateTime(filterTo_->date(),filterTo_->time(),QTimeZone("Europe/Brussels"));select+="AND julianday(m.timestamp)<=julianday('"+dt.toString(Qt::ISODate)+"') ";}}return select+"ORDER BY m.id ASC";};
  QHash<QString,QColor> colors;QSqlQuery colorQuery("SELECT printf('%07d',ric),color FROM capcodes",db_);while(colorQuery.next())colors.insert(colorQuery.value(0).toString(),QColor(colorQuery.value(1).toString()));
  static_cast<MessageModel*>(all_)->colors=colors;static_cast<MessageModel*>(saved_)->colors=colors;
- auto update=[this,insertsOnly](MessageModel* model,QString query,bool follow){if(!model->apply(query,db_,follow,insertsOnly)){technical("Rafraîchissement SQLite différé");if(refreshTimer_)refreshTimer_->start(500);}};update(static_cast<MessageModel*>(all_),query(false,search_->text()),followAll);update(static_cast<MessageModel*>(saved_),query(true,savedSearch_->text()),followSaved);if(followAll)allView_->scrollToBottom();if(followSaved)savedView_->scrollToBottom();
+ auto update=[this,insertsOnly](MessageModel* model,QTableView* view,const QString& sql){
+  auto follow=[this,view]{auto bar=view->verticalScrollBar();return autoscroll_&&view->horizontalHeader()->sortIndicatorSection()<0&&bar->value()>=bar->maximum()-2;};
+  auto wasFollowing=std::make_shared<bool>(false);
+  auto check=[follow,wasFollowing]{return *wasFollowing=follow();};
+  auto completed=[view,wasFollowing]{if(*wasFollowing)view->scrollToBottom();};
+  if(testStorage_){if(model->apply(sql,db_,check(),insertsOnly))completed();}
+  else model->applyAsync(sql,db_,insertsOnly,check,completed);
+ };
+ update(static_cast<MessageModel*>(all_),allView_,query(false,search_->text()));
+ update(static_cast<MessageModel*>(saved_),savedView_,query(true,savedSearch_->text()));
 
 }
 void Window::copyTable(QTableView* view){QStringList lines;for(const auto& idx:view->selectionModel()->selectedRows()){QStringList cells;for(int c=0;c<view->model()->columnCount();++c)cells<<view->model()->index(idx.row(),c).data().toString();lines<<cells.join('\t');}QApplication::clipboard()->setText(lines.join('\n'));}
