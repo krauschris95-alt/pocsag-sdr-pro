@@ -1,5 +1,8 @@
 #include "payloadanalysis.h"
 #include <cctype>
+#include <array>
+#include <algorithm>
+#include <cmath>
 namespace pocsag {
 namespace {
 bool utf8Text(const std::string& bytes){for(size_t i=0;i<bytes.size();){unsigned c=(unsigned char)bytes[i++];if(c<128){if((c<32&&c!=9&&c!=10&&c!=13)||c==127)return false;continue;}int n;unsigned value,min;if(c>=0xc2&&c<=0xdf){n=1;value=c&31;min=128;}else if(c>=0xe0&&c<=0xef){n=2;value=c&15;min=2048;}else if(c>=0xf0&&c<=0xf4){n=3;value=c&7;min=65536;}else return false;if(i+n>bytes.size())return false;while(n--){unsigned b=(unsigned char)bytes[i++];if((b&0xc0)!=0x80)return false;value=(value<<6)|(b&63);}if(value<min||value>0x10ffff||(value>=0xd800&&value<=0xdfff)||(value>=0x80&&value<0xa0))return false;}return true;}
@@ -9,5 +12,41 @@ PayloadAssessment assessAlpha(const std::string& text){PayloadAssessment out;std
  int letters=0,spaces=0,symbols=0;bool printable=true;for(unsigned char c:text){if(std::isalpha(c))++letters;else if(std::isspace(c))++spaces;else if(!std::isdigit(c))++symbols;if((c<32&&c!=9&&c!=10&&c!=13)||c>=127)printable=false;}
  out.plausibleAlpha=printable&&text.find("<0x")==std::string::npos&&letters>=3&&symbols*3<=int(text.size())&&(spaces>0||text.size()<=24);
  out.description=out.plausibleAlpha?"Texte ALPHA plausible ; sélection heuristique, alternative NUMERIC conservée":"Charge utile non interprétée ; ALPHA/NUMERIC ou format applicatif inconnu";return out;
+}
+
+BinaryPayloadDetails inspectBase64(const std::string& text, std::size_t previewBytes){
+ BinaryPayloadDetails details;
+ std::string bytes;
+ if(!decode64(text,bytes))return details;
+ details.recognized=true;
+ details.byteCount=bytes.size();
+ const auto limit=std::min(previewBytes,bytes.size());
+ details.truncated=limit<bytes.size();
+ static constexpr char hex[]="0123456789ABCDEF";
+ bool ascii=true;
+ std::array<std::size_t,256> histogram{};
+ for(unsigned char c:bytes){
+  ++histogram[c];
+  if(c<32||c>126)ascii=false;
+ }
+ for(std::size_t i=0;i<limit;++i){
+  unsigned char c=static_cast<unsigned char>(bytes[i]);
+  if(i)details.hexPreview+=' ';
+  details.hexPreview+=hex[c>>4];
+  details.hexPreview+=hex[c&15];
+  details.asciiPreview+=c>=32&&c<=126?static_cast<char>(c):'.';
+ }
+ for(auto count:histogram)if(count){
+  const double probability=double(count)/double(bytes.size());
+  details.entropyBitsPerByte-=probability*std::log2(probability);
+ }
+ if(bytes.starts_with(std::string("\x1f\x8b",2)))details.signature="Signature gzip possible";
+ else if(bytes.starts_with("PK\x03\x04"))details.signature="Signature ZIP possible";
+ else if(bytes.starts_with(std::string("\x89PNG\r\n\x1a\n",8)))details.signature="Signature PNG possible";
+ else if(bytes.starts_with(std::string("\xff\xd8\xff",3)))details.signature="Signature JPEG possible";
+ else if(bytes.starts_with("%PDF-"))details.signature="Signature PDF possible";
+ else if(ascii)details.signature="Texte ASCII possible";
+ else details.signature="Format binaire inconnu";
+ return details;
 }
 }

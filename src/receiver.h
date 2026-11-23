@@ -6,8 +6,9 @@
 #include <QMetaType>
 #include <QMutex>
 #include "decoder.h"
+#include "protocol_selector.h"
 Q_DECLARE_METATYPE(pocsag::Message)
-struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; QString capture;QString deviceKey;bool automaticGain=false;quint32 bandwidth=0;bool reconnect=true;int vgaGain=20;quint32 channelBandwidth=21000;double squelch=-160;QString antenna;QString label; };
+struct RadioConfig { quint32 frequency=169626000, rate=240000; int gain=420,ppm=0,index=0; QString file; int baud=0; QString capture;QString deviceKey;bool automaticGain=false;quint32 bandwidth=0;bool reconnect=true;int vgaGain=20;quint32 channelBandwidth=21000;double squelch=-160;QString antenna;QString label;paging::SelectionMode protocol=paging::SelectionMode::Pocsag; };
 struct RadioDevice {QString name,key,backend,serial,usbId,driver,status,resolution;bool usable=true;};
 class Receiver:public QThread {
  Q_OBJECT
@@ -26,6 +27,8 @@ signals:
  void samples(QByteArray bytes);
  void decoded(quint32 ric,int function,int baud,QString type,QString text,int corrected,quint32 frequency,QString receiver);
  void frame(pocsag::Message message,quint32 frequency,QString receiver,QDateTime timestamp);
+ void flexFrame(quint64 address,int baud,int levels,QString type,QString text,quint32 frequency,QString receiver,QDateTime timestamp);
+ void protocolDetected(QString protocol);
  void problem(QString message);
  void state(QString message);
  void tuned(quint32 frequency,quint32 rate,quint32 bandwidth,QString identity);
